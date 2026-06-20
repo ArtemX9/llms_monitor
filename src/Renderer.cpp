@@ -1,5 +1,6 @@
 #include "Renderer.h"
 #include "Config.h"
+#define TITLE_FONT &FreeSansBold12pt7b
 
 TFT_eSPI& Renderer::tft() { return _tft; }
 
@@ -10,6 +11,28 @@ void Renderer::init(uint8_t brightness) {
   _tft.init();
   _tft.setRotation(3);
   _tft.fillScreen(TFT_BLACK);
+}
+
+// Pixel-art sprite: 10 cols × 12 rows, each cell = 3×3 px → 30×36 px total
+// 0=transparent, 1=body, 2=accent
+static const uint8_t SPR[12][10] PROGMEM = {
+  {0,1,0,0,0,0,0,0,1,0},   // antennae
+  {0,0,0,0,0,0,0,0,0,0},
+  {0,0,1,1,1,1,1,1,0,0},   // head
+  {0,1,1,1,1,1,1,1,1,0},
+  {1,1,2,1,1,1,1,2,1,1},   // eyes
+  {1,1,1,1,1,1,1,1,1,1},
+  {0,1,2,1,1,1,1,2,1,0},   // smile
+  {0,0,1,1,1,1,1,1,0,0},
+  {0,1,1,1,1,1,1,1,1,0},   // body
+  {1,1,1,1,1,1,1,1,1,1},
+  {0,0,1,1,0,0,1,1,0,0},   // legs
+  {0,0,1,1,0,0,1,1,0,0},
+};
+
+static void formatReset(char* buf, size_t n, int minutes) {
+  if (minutes >= 60) snprintf(buf, n, "Resets in %dh %dm", minutes / 60, minutes % 60);
+  else               snprintf(buf, n, "Resets in %d min", minutes);
 }
 
 // ── Primitives ────────────────────────────────────────────────────────────────
@@ -27,6 +50,27 @@ void Renderer::drawProgressBar(int x, int y, int w, int h, int pct, uint16_t col
   int fill = (w - 2) * pct / 100;
   _tft.fillRect(x + 1, y + 1, fill,               h - 2, color);
   _tft.fillRect(x + 1 + fill, y + 1, w - 2 - fill, h - 2, TFT_BLACK);
+}
+
+void Renderer::drawButton(int x, int y, int w, int h,
+                           const char* label, uint16_t fill, uint16_t border, uint16_t fg) {
+  _tft.fillRoundRect(x, y, w, h, 5, fill);
+  _tft.drawRoundRect(x, y, w, h, 5, border);
+  _tft.setTextColor(fg);
+  _tft.setTextDatum(MC_DATUM);
+  _tft.drawString(label, x + w / 2, y + h / 2, 2);
+  _tft.setTextDatum(TL_DATUM);
+}
+
+void Renderer::drawPill(int x, int y, int w, int h, const char* label) {
+  uint16_t fill   = _tft.color565(48, 48, 48);
+  uint16_t border = _tft.color565(105, 105, 105);
+  _tft.fillRoundRect(x, y, w, h, h / 2, fill);
+  _tft.drawRoundRect(x, y, w, h, h / 2, border);
+  _tft.setTextColor(TFT_WHITE);
+  _tft.setTextDatum(MC_DATUM);
+  _tft.drawString(label, x + w / 2, y + h / 2, 2);
+  _tft.setTextDatum(TL_DATUM);
 }
 
 // ── Status screens ────────────────────────────────────────────────────────────
@@ -62,38 +106,58 @@ void Renderer::showRebooting() {
 // ── Claude ────────────────────────────────────────────────────────────────────
 
 void Renderer::drawClaude(const UsageData& d) {
-  char buf[20];
+  char buf[24];
   _tft.fillScreen(TFT_BLACK);
+
+  // ── Header: sprite + title ─────────────────────────────────────────────────
+  const uint16_t body = _tft.color565(210, 90, 42);
+  const uint16_t dark = _tft.color565(130, 50, 15);
+  for (int r = 0; r < 12; r++)
+    for (int c = 0; c < 10; c++) {
+      uint8_t v = pgm_read_byte(&SPR[r][c]);
+      if (v) _tft.fillRect(5 + c * 3, 2 + r * 3, 3, 3, v == 1 ? body : dark);
+    }
+
+  _tft.setFreeFont(TITLE_FONT);
   _tft.setTextColor(TFT_WHITE);
-  _tft.setTextSize(1);
-  _tft.drawString("CLAUDE CODE", 10, 8, 4);
+  _tft.setTextDatum(MC_DATUM);
+  _tft.drawString("Usage", 160, 19);
+  _tft.setTextFont(0);
+  _tft.setTextDatum(TL_DATUM);
+
   _tft.drawFastHLine(0, 38, 320, TFT_DARKGREY);
 
+  // ── Session ────────────────────────────────────────────────────────────────
   uint16_t cSession = progressColor(d.claudeSession);
-  _tft.setTextColor(TFT_CYAN);
-  _tft.drawString("Session", 10, 50, 2);
-  _tft.setTextColor(cSession);
   snprintf(buf, sizeof(buf), "%d%%", d.claudeSession);
-  _tft.drawString(buf, 248, 44, 4);
-  drawProgressBar(10, 70, 300, 14, d.claudeSession, cSession);
-  snprintf(buf, sizeof(buf), "Resets in %d min", d.claudeReset);
+  _tft.setTextColor(cSession);
+  _tft.drawString(buf, 10, 44, 4);
+
+  drawPill(212, 44, 100, 26, "Session");
+
+  drawProgressBar(10, 70, 300, 12, d.claudeSession, cSession);
+  formatReset(buf, sizeof(buf), d.claudeReset);
   _tft.setTextColor(TFT_DARKGREY);
-  _tft.drawString(buf, 10, 88, 2);
+  _tft.drawString(buf, 10, 86, 2);
 
   _tft.drawFastHLine(0, 108, 320, TFT_DARKGREY);
 
+  // ── Weekly ─────────────────────────────────────────────────────────────────
   uint16_t cWeekly = progressColor(d.claudeWeekly);
-  _tft.setTextColor(TFT_CYAN);
-  _tft.drawString("Weekly", 10, 120, 2);
-  _tft.setTextColor(cWeekly);
   snprintf(buf, sizeof(buf), "%d%%", d.claudeWeekly);
-  _tft.drawString(buf, 248, 114, 4);
-  drawProgressBar(10, 140, 300, 14, d.claudeWeekly, cWeekly);
+  _tft.setTextColor(cWeekly);
+  _tft.drawString(buf, 10, 114, 4);
+
+  drawPill(212, 114, 100, 26, "Weekly");
+
+  drawProgressBar(10, 140, 300, 12, d.claudeWeekly, cWeekly);
 
   _tft.drawFastHLine(0, 168, 320, TFT_DARKGREY);
-  _tft.setTextColor(TFT_DARKGREY);
-  _tft.drawString("< Settings", 10, 178, 2);
-  _tft.drawString("Grok >", 244, 178, 2);
+  {
+    uint16_t f = _tft.color565(32,32,32), b = _tft.color565(90,90,90);
+    drawButton(8,  186, 142, 36, "< Settings", f, b, TFT_WHITE);
+    drawButton(170, 186, 142, 36, "Grok >",    f, b, TFT_WHITE);
+  }
 
   _prev.claudeSession = d.claudeSession;
   _prev.claudeWeekly  = d.claudeWeekly;
@@ -101,30 +165,30 @@ void Renderer::drawClaude(const UsageData& d) {
 }
 
 void Renderer::updateClaude(const UsageData& d) {
-  char buf[20];
+  char buf[24];
   if (d.claudeSession != _prev.claudeSession) {
     uint16_t c = progressColor(d.claudeSession);
-    _tft.fillRect(248, 44, 72, 28, TFT_BLACK);
+    _tft.fillRect(10, 44, 200, 28, TFT_BLACK);
     _tft.setTextColor(c);
     snprintf(buf, sizeof(buf), "%d%%", d.claudeSession);
-    _tft.drawString(buf, 248, 44, 4);
-    drawProgressBar(10, 70, 300, 14, d.claudeSession, c);
+    _tft.drawString(buf, 10, 44, 4);
+    drawProgressBar(10, 70, 300, 12, d.claudeSession, c);
     _prev.claudeSession = d.claudeSession;
   }
   if (d.claudeReset != _prev.claudeReset) {
-    _tft.fillRect(10, 88, 220, 16, TFT_BLACK);
+    _tft.fillRect(10, 86, 260, 16, TFT_BLACK);
     _tft.setTextColor(TFT_DARKGREY);
-    snprintf(buf, sizeof(buf), "Resets in %d min", d.claudeReset);
-    _tft.drawString(buf, 10, 88, 2);
+    formatReset(buf, sizeof(buf), d.claudeReset);
+    _tft.drawString(buf, 10, 86, 2);
     _prev.claudeReset = d.claudeReset;
   }
   if (d.claudeWeekly != _prev.claudeWeekly) {
     uint16_t c = progressColor(d.claudeWeekly);
-    _tft.fillRect(248, 114, 72, 28, TFT_BLACK);
+    _tft.fillRect(10, 114, 200, 28, TFT_BLACK);
     _tft.setTextColor(c);
     snprintf(buf, sizeof(buf), "%d%%", d.claudeWeekly);
-    _tft.drawString(buf, 248, 114, 4);
-    drawProgressBar(10, 140, 300, 14, d.claudeWeekly, c);
+    _tft.drawString(buf, 10, 114, 4);
+    drawProgressBar(10, 140, 300, 12, d.claudeWeekly, c);
     _prev.claudeWeekly = d.claudeWeekly;
   }
 }
@@ -157,9 +221,11 @@ void Renderer::drawGrok(const UsageData& d) {
   drawProgressBar(10, 130, 300, 14, d.grokRequests, cReqs);
 
   _tft.drawFastHLine(0, 158, 320, TFT_DARKGREY);
-  _tft.setTextColor(TFT_DARKGREY);
-  _tft.drawString("< Claude", 10, 168, 2);
-  _tft.drawString("Settings >", 200, 168, 2);
+  {
+    uint16_t f = _tft.color565(32,32,32), b = _tft.color565(90,90,90);
+    drawButton(8,   181, 142, 36, "< Claude",   f, b, TFT_WHITE);
+    drawButton(170, 181, 142, 36, "Settings >", f, b, TFT_WHITE);
+  }
 
   _prev.grokTokens   = d.grokTokens;
   _prev.grokRequests = d.grokRequests;
@@ -227,10 +293,11 @@ void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval) {
   _tft.setTextColor(TFT_RED);
   _tft.drawString("REBOOT", 82, 180, 4);
 
-  _tft.drawFastHLine(0, 215, 320, TFT_DARKGREY);
-  _tft.setTextColor(TFT_DARKGREY);
-  _tft.drawString("< Grok", 10, 222, 2);
-  _tft.drawString("Claude >", 234, 222, 2);
+  {
+    uint16_t f = _tft.color565(32,32,32), b = _tft.color565(90,90,90);
+    drawButton(8,   211, 142, 26, "< Grok",   f, b, TFT_WHITE);
+    drawButton(170, 211, 142, 26, "Claude >", f, b, TFT_WHITE);
+  }
 }
 
 // ── Public update API ─────────────────────────────────────────────────────────

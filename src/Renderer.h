@@ -8,6 +8,8 @@ class Renderer {
 
   uint16_t progressColor(int pct);
   void drawProgressBar(int x, int y, int w, int h, int pct, uint16_t color);
+  void drawButton(int x, int y, int w, int h, const char* label, uint16_t fill, uint16_t border, uint16_t fg);
+  void drawPill(int x, int y, int w, int h, const char* label);
 
   void drawClaude(const UsageData& d);
   void updateClaude(const UsageData& d);
