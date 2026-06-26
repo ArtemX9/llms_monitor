@@ -15,7 +15,8 @@ class Renderer {
   void updateClaude(const UsageData& d);
   void drawGrok(const UsageData& d);
   void updateGrok(const UsageData& d);
-  void drawSettings(uint8_t brightness, unsigned long fetchInterval);
+  void drawSettings(uint8_t brightness, unsigned long fetchInterval, bool ledEnabled);
+  void drawLedToggle(bool ledEnabled);
 
 public:
   TFT_eSPI& tft();
@@ -27,8 +28,9 @@ public:
   void showRebooting();
 
   void switchTo(int screen, const UsageData& data,
-                uint8_t brightness, unsigned long fetchInterval);
+                uint8_t brightness, unsigned long fetchInterval, bool ledEnabled);
   void update(int screen, const UsageData& data, bool fullRedraw);
   void updateBrightnessBar(uint8_t brightness);
   void updateIntervalButtons(unsigned long fetchInterval);
+  void updateLedToggle(bool ledEnabled);
 };

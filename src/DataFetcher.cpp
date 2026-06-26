@@ -13,21 +13,26 @@ void DataFetcher::ensureWifi() {
   WiFi.begin(_ssid, _password);
   unsigned long t = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - t < 10000) {
-    digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+    if (_ledEnabled) digitalWrite(LED_PIN, !digitalRead(LED_PIN));
     delay(250);
   }
-  digitalWrite(LED_PIN, WiFi.status() == WL_CONNECTED ? HIGH : LOW);
+  digitalWrite(LED_PIN, (_ledEnabled && WiFi.status() == WL_CONNECTED) ? HIGH : LOW);
 }
 
 bool DataFetcher::connect(unsigned long timeoutMs) {
   WiFi.begin(_ssid, _password);
   unsigned long t = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - t < timeoutMs) {
-    digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+    if (_ledEnabled) digitalWrite(LED_PIN, !digitalRead(LED_PIN));
     delay(250);
   }
-  digitalWrite(LED_PIN, WiFi.status() == WL_CONNECTED ? HIGH : LOW);
+  digitalWrite(LED_PIN, (_ledEnabled && WiFi.status() == WL_CONNECTED) ? HIGH : LOW);
   return WiFi.status() == WL_CONNECTED;
+}
+
+void DataFetcher::setLedEnabled(bool enabled) {
+  _ledEnabled = enabled;
+  digitalWrite(LED_PIN, (enabled && WiFi.status() == WL_CONNECTED) ? HIGH : LOW);
 }
 
 bool DataFetcher::fetch(UsageData& out) {

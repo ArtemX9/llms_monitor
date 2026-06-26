@@ -52,12 +52,12 @@ void loop() {
   switch (touch.poll(state.screen)) {
     case Event::NavForward:
       state.screen = (state.screen + 1) % 3;
-      renderer.switchTo(state.screen, data, state.brightness, state.fetchInterval);
+      renderer.switchTo(state.screen, data, state.brightness, state.fetchInterval, state.ledEnabled);
       state.needsFullRedraw = false;
       break;
     case Event::NavBack:
       state.screen = (state.screen + 2) % 3;
-      renderer.switchTo(state.screen, data, state.brightness, state.fetchInterval);
+      renderer.switchTo(state.screen, data, state.brightness, state.fetchInterval, state.ledEnabled);
       state.needsFullRedraw = false;
       break;
     case Event::BrightnessUp:
@@ -81,6 +81,11 @@ void loop() {
     case Event::Interval120s:
       state.fetchInterval = 120000;
       renderer.updateIntervalButtons(state.fetchInterval);
+      break;
+    case Event::ToggleLed:
+      state.ledEnabled = !state.ledEnabled;
+      fetcher.setLedEnabled(state.ledEnabled);
+      renderer.updateLedToggle(state.ledEnabled);
       break;
     case Event::Reboot:
       renderer.showRebooting();

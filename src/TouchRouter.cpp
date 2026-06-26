@@ -30,6 +30,11 @@ Event TouchRouter::poll(int screen) {
     if (mx >= 220 && mx < 315) return Event::Interval120s;
     return Event::None;
   }
-  if (y >= 175 && y <= 207 && x >= 60 && x <= 260) return Event::Reboot;
+  if (y >= 175 && y <= 207) {
+    int mx = 319 - (int)x; // mirror touch x to visual x (x-axis inverted in rotation 3)
+    if (mx >= 10  && mx < 155) return Event::ToggleLed;
+    if (mx >= 165 && mx < 310) return Event::Reboot;
+    return Event::None;
+  }
   return Event::None;
 }

@@ -11,6 +11,7 @@ struct AppState {
   uint8_t       brightness      = 200;
   unsigned long fetchInterval   = 60000;
   bool          needsFullRedraw = true;
+  bool          ledEnabled      = true;
 };
 
 enum class Event {
@@ -18,5 +19,6 @@ enum class Event {
   NavForward, NavBack,
   BrightnessUp, BrightnessDown,
   Interval30s, Interval60s, Interval120s,
+  ToggleLed,
   Reboot
 };

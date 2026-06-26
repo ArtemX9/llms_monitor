@@ -255,7 +255,7 @@ void Renderer::updateGrok(const UsageData& d) {
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 
-void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval) {
+void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval, bool ledEnabled) {
   _tft.fillScreen(TFT_BLACK);
   _tft.setTextColor(TFT_WHITE);
   _tft.setTextSize(1);
@@ -289,9 +289,12 @@ void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval) {
   }
 
   _tft.drawFastHLine(0, 162, 320, TFT_DARKGREY);
-  _tft.drawRect(60, 175, 200, 32, TFT_RED);
+  drawLedToggle(ledEnabled);
+  _tft.drawRect(165, 175, 145, 32, TFT_RED);
   _tft.setTextColor(TFT_RED);
-  _tft.drawString("REBOOT", 82, 180, 4);
+  _tft.setTextDatum(MC_DATUM);
+  _tft.drawString("REBOOT", 165 + 72, 175 + 16, 4);
+  _tft.setTextDatum(TL_DATUM);
 
   {
     uint16_t f = _tft.color565(32,32,32), b = _tft.color565(90,90,90);
@@ -300,13 +303,23 @@ void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval) {
   }
 }
 
+void Renderer::drawLedToggle(bool ledEnabled) {
+  uint16_t c = ledEnabled ? TFT_GREEN : TFT_DARKGREY;
+  _tft.fillRect(11, 176, 143, 30, TFT_BLACK);
+  _tft.drawRect(10, 175, 145, 32, c);
+  _tft.setTextColor(c);
+  _tft.setTextDatum(MC_DATUM);
+  _tft.drawString(ledEnabled ? "LED: ON" : "LED: OFF", 10 + 72, 175 + 16, 4);
+  _tft.setTextDatum(TL_DATUM);
+}
+
 // ── Public update API ─────────────────────────────────────────────────────────
 
 void Renderer::switchTo(int screen, const UsageData& data,
-                        uint8_t brightness, unsigned long fetchInterval) {
+                        uint8_t brightness, unsigned long fetchInterval, bool ledEnabled) {
   if      (screen == 0) drawClaude(data);
   else if (screen == 1) drawGrok(data);
-  else                  drawSettings(brightness, fetchInterval);
+  else                  drawSettings(brightness, fetchInterval, ledEnabled);
 }
 
 void Renderer::update(int screen, const UsageData& data, bool fullRedraw) {
@@ -322,6 +335,10 @@ void Renderer::updateBrightnessBar(uint8_t brightness) {
   int bfill = 180 * brightness / 255;
   _tft.fillRect(69, 59, bfill,               30, TFT_YELLOW);
   _tft.fillRect(69 + bfill, 59, 180 - bfill, 30, TFT_BLACK);
+}
+
+void Renderer::updateLedToggle(bool ledEnabled) {
+  drawLedToggle(ledEnabled);
 }
 
 void Renderer::updateIntervalButtons(unsigned long fetchInterval) {

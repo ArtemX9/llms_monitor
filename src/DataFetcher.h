@@ -7,6 +7,7 @@ class DataFetcher {
   const char* _password;
   const char* _url;
   int _failures = 0;
+  bool _ledEnabled = true;
 
   void ensureWifi();
 
@@ -15,4 +16,5 @@ public:
   bool connect(unsigned long timeoutMs = 15000);
   bool fetch(UsageData& out);
   int  consecutiveFailures() const;
+  void setLedEnabled(bool enabled);
 };
