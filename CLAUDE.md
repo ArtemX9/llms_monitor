@@ -138,7 +138,7 @@ path instead of falling back to a per-pixel loop.
 
 Three concerns, strictly separated:
 
-- **DataFetcher** — owns WiFi state and HTTP. `connect()` for boot (15 s timeout), `fetch()` auto-reconnects internally. Tracks consecutive failures; caller restarts after 5.
+- **DataFetcher** — owns WiFi state and HTTP. Constructor takes a list of `WifiCredential` networks, tried in priority order (`WIFI_CONNECT_TIMEOUT_MS` ≈ 8 s per network). `fetch()` auto-reconnects internally and resolves the proxy server dynamically (see "Data source" below) rather than hitting a fixed URL. Tracks consecutive failures; caller restarts after 5 (see "Proxy recovery" below).
 - **Renderer** — pure drawing. Receives all needed values as parameters. Exposes `tft()` ref so TouchRouter can call `getTouch()` without owning the hardware.
 - **TouchRouter** — calls `getTouch()`, interprets zones by current screen, returns an `Event`. Never touches display or mutates state.
 - **AppState** (struct in `Types.h`) — `screen`, `brightness`, `fetchInterval`, `needsFullRedraw`. Owned exclusively by `loop()`.
@@ -156,10 +156,23 @@ essentially invisible. It still shows correctly during an actual prolonged WiFi 
 tracking last-known WiFi state in `Renderer` and re-drawing it after every full redraw,
 which wasn't judged worth the added coupling for a rare-to-see status indicator.
 
+### Proxy recovery on repeated fetch failure
+After 5 consecutive `fetch()` failures, `loop()` calls `DataFetcher::recoverProxy()`.
+`recoverProxy()` first checks `WiFi.status() != WL_CONNECTED` and bails out immediately if
+so — without touching the cache or scanning — because a WiFi outage isn't a proxy problem
+and a ~30-40 s subnet scan against `0.0.0.0` would just freeze the UI for nothing. Only
+when WiFi is confirmed still connected does it clear the cached proxy IP and rescan. If
+`recoverProxy()` returns `false` either way (WiFi down, or WiFi up but no proxy found),
+`main.cpp` falls back to `ESP.restart()`.
+
 ## Data source
 
-Proxy server (local network, currently `http://192.168.0.58:3000` on this branch — see
-`main.cpp` for whichever WiFi network/IP is active). Expected JSON shape:
+The proxy IP is not hardcoded — it's discovered automatically. On boot, `DataFetcher`
+checks a cached IP (ESP32 NVS, namespace `netcfg`, key `proxyIp`) by validating it's still
+the real proxy; if that fails or nothing is cached, it scans the local `/24` subnet on port
+`PROXY_PORT` (3000, fixed) for a host that responds with the expected JSON shape below.
+`main.cpp` declares a `wifiNetworks[]` array of `{ssid, password}` pairs instead of a
+single hardcoded network/IP. Expected JSON shape:
 ```json
 {
   "claude": { "session_pct": 43, "weekly_pct": 9, "reset_min": 240 },

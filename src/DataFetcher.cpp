@@ -193,6 +193,7 @@ bool DataFetcher::fetch(UsageData& out) {
 int DataFetcher::consecutiveFailures() const { return _failures; }
 
 bool DataFetcher::recoverProxy() {
+  if (WiFi.status() != WL_CONNECTED) return false;
   clearCachedIp();
   _proxyResolved = false;
   if (scanForProxy()) {
