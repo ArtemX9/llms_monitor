@@ -36,6 +36,8 @@ src/
   DataFetcher.h/cpp — WiFi reconnect + HTTP fetch
   Renderer.h/cpp  — all TFT drawing (pure, no input/state)
   TouchRouter.h/cpp — touch polling, returns Event enum
+  SpriteData.h    — pixel-art mascot frame data (pure data, no logic)
+  AnimatedSprite.h/cpp — mascot animation state machine + redraw
   main.cpp        — credentials, globals, setup(), loop()
 ```
 
@@ -100,6 +102,38 @@ WiFi/TCP stack logs bypass Arduino Serial and print garbage unless suppressed:
 esp_log_level_set("*", ESP_LOG_NONE);
 ```
 
+### This panel has no double buffering — any separate "clear, then redraw" step is visible
+`AnimatedSprite::draw()` (the animated header mascot on the Claude screen) originally
+cleared a large fixed-size rect to black, then redrew the sprite on top, every single
+redraw (~4-10Hz). That is genuinely two sequential, visible operations on real hardware
+with no frame buffer to hide the gap — it showed up as a deterministic, reproducible black
+flash/wedge cutting across the sprite on *every* redraw, not an intermittent glitch. Two
+plausible-sounding "SPI timing race" fixes (batching TFT_eSPI calls into one
+`startWrite()`/`endWrite()` transaction; consolidating dozens of per-cell `fillRect()`
+calls into one `pushImage()`) both compiled fine and changed nothing on hardware — because
+neither addressed the real cause. The actual fix: only clear the exact region that's about
+to change (the sprite's previous footprint minus whatever overlaps its new position), never
+a larger area "just in case." A few px of unavoidable overlap can still very rarely tear if
+the panel's own refresh lands mid-write, but that's now small enough to be a non-issue.
+
+Lesson for any future TFT_eSPI drawing code on this board: **never fill an area black and
+redraw over it as two separate steps if you can instead compute the exact diff and only
+touch what actually changed.** If something *does* look like intermittent tearing, check
+first whether it's actually this (a deterministic, always-on redraw artifact) before
+chasing SPI-transaction timing — the visible symptom looks similar but the fix is entirely
+different.
+
+### `TFT_eSPI::pushImage()` needs pre-swapped color bytes; `fillRect()` doesn't
+`fillRect()`'s color path (`pushBlock`) always byte-swaps internally, but `pushImage()`'s
+raw pixel path (`pushPixels()` with the default `_swapBytes=false`, see
+`Processors/TFT_eSPI_ESP32.c`) writes a buffer's bytes as-is with no swap. `color565()`
+returns host (little-endian) byte order. If you build a pixel buffer with `color565()`
+values and push it via `pushImage()`, the colors come out wrong (this happened while
+building `AnimatedSprite`). Either swap each color once when writing it into the buffer
+(`(c >> 8) | (c << 8)`, what `AnimatedSprite::draw()` does) or call
+`tft.setSwapBytes(true)` first — the former keeps `pushPixels()`'s faster raw burst-write
+path instead of falling back to a per-pixel loop.
+
 ## Architecture
 
 Three concerns, strictly separated:
@@ -108,6 +142,7 @@ Three concerns, strictly separated:
 - **Renderer** — pure drawing. Receives all needed values as parameters. Exposes `tft()` ref so TouchRouter can call `getTouch()` without owning the hardware.
 - **TouchRouter** — calls `getTouch()`, interprets zones by current screen, returns an `Event`. Never touches display or mutates state.
 - **AppState** (struct in `Types.h`) — `screen`, `brightness`, `fetchInterval`, `needsFullRedraw`. Owned exclusively by `loop()`.
+- **AnimatedSprite** — owns the Claude-screen header mascot's animation state (character choice, frame, patrol position). `Renderer::tickSprite()` calls `tick(millis())` then `draw()` only if something changed; driven from `loop()` independently of the WiFi-fetch timer, only while on the Claude screen. Character pixel data lives in `SpriteData.h`, separate from the state machine.
 
 Global init order in `main.cpp` matters: `renderer` must be declared before `touch` because `TouchRouter touch(renderer.tft())` captures a reference to `renderer._tft`.
 
