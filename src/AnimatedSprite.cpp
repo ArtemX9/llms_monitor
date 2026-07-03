@@ -163,11 +163,19 @@ void AnimatedSprite::draw(TFT_eSPI& tft) {
     drawY = SPRITE_Y - ((step % 2 == 0) ? 0 : HOP_BOUNCE_PX);
   }
 
+  // pushImage()'s raw pixel path (pushPixels() with the default _swapBytes=false)
+  // writes the buffer's bytes as-is with no swap, unlike fillRect()'s pushBlock()
+  // which always byte-swaps internally. color565() returns host (little-endian)
+  // byte order, so values stored here must be pre-swapped to the wire's
+  // big-endian order or the colors come out wrong.
+  const uint16_t bodyWire = (body >> 8) | (body << 8);
+  const uint16_t darkWire = (dark >> 8) | (dark << 8);
+
   static uint16_t buf[36][30];
   for (int r = 0; r < 12; r++) {
     for (int c = 0; c < 10; c++) {
       uint8_t v = pgm_read_byte(&frame[r][c]);
-      uint16_t color = v == 0 ? TFT_BLACK : (v == 1 ? body : dark);
+      uint16_t color = v == 0 ? TFT_BLACK : (v == 1 ? bodyWire : darkWire);
       for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
           buf[r * 3 + i][c * 3 + j] = color;
