@@ -15,21 +15,21 @@ Event TouchRouter::poll(int screen) {
   }
 
   // Settings
-  if (y > 215) {
+  if (y > 213) {
     return (x < 160) ? Event::NavBack : Event::NavForward;
   }
-  if (y >= 58 && y <= 90) {
+  if (y >= 62 && y <= 94) {
     if (x <= 60)  return Event::BrightnessDown;  // visual left:  − button
     if (x >= 260) return Event::BrightnessUp;    // visual right: + button
     return Event::None;
   }
-  if (y >= 122 && y <= 154) {
+  if (y >= 130 && y <= 162) {
     if (x >= 10  && x < 105) return Event::Interval30s;
     if (x >= 115 && x < 210) return Event::Interval60s;
     if (x >= 220 && x < 315) return Event::Interval120s;
     return Event::None;
   }
-  if (y >= 175 && y <= 207) {
+  if (y >= 180 && y <= 212) {
     if (x >= 10  && x < 155) return Event::ToggleLed;
     if (x >= 165 && x < 310) return Event::Reboot;
     return Event::None;

@@ -126,42 +126,42 @@ void Renderer::drawClaude(const UsageData& d) {
   _tft.setFreeFont(TITLE_FONT);
   _tft.setTextColor(TFT_WHITE);
   _tft.setTextDatum(MC_DATUM);
-  _tft.drawString("Usage", 160, 19);
+  _tft.drawString("Usage", 160, 22);
   _tft.setTextFont(0);
   _tft.setTextDatum(TL_DATUM);
 
-  _tft.drawFastHLine(0, 38, 320, TFT_DARKGREY);
+  _tft.drawFastHLine(0, 44, 320, TFT_DARKGREY);
 
   // ── Session ────────────────────────────────────────────────────────────────
   uint16_t cSession = progressColor(d.claudeSession);
   snprintf(buf, sizeof(buf), "%d%%", d.claudeSession);
   _tft.setTextColor(cSession);
-  _tft.drawString(buf, 10, 44, 4);
+  _tft.drawString(buf, 10, 52, 4);
 
-  drawPill(212, 44, 100, 26, "Session");
+  drawPill(206, 52, 104, 28, "Session");
 
-  drawProgressBar(10, 70, 300, 12, d.claudeSession, cSession);
+  drawProgressBar(10, 86, 300, 14, d.claudeSession, cSession);
   formatReset(buf, sizeof(buf), d.claudeReset);
   _tft.setTextColor(TFT_DARKGREY);
-  _tft.drawString(buf, 10, 86, 2);
+  _tft.drawString(buf, 10, 104, 2);
 
-  _tft.drawFastHLine(0, 108, 320, TFT_DARKGREY);
+  _tft.drawFastHLine(0, 128, 320, TFT_DARKGREY);
 
   // ── Weekly ─────────────────────────────────────────────────────────────────
   uint16_t cWeekly = progressColor(d.claudeWeekly);
   snprintf(buf, sizeof(buf), "%d%%", d.claudeWeekly);
   _tft.setTextColor(cWeekly);
-  _tft.drawString(buf, 10, 114, 4);
+  _tft.drawString(buf, 10, 136, 4);
 
-  drawPill(212, 114, 100, 26, "Weekly");
+  drawPill(206, 136, 104, 28, "Weekly");
 
-  drawProgressBar(10, 140, 300, 12, d.claudeWeekly, cWeekly);
+  drawProgressBar(10, 170, 300, 14, d.claudeWeekly, cWeekly);
 
-  _tft.drawFastHLine(0, 168, 320, TFT_DARKGREY);
+  _tft.drawFastHLine(0, 198, 320, TFT_DARKGREY);
   {
     uint16_t f = _tft.color565(32,32,32), b = _tft.color565(90,90,90);
-    drawButton(8,  186, 142, 36, "< Settings", f, b, TFT_WHITE);
-    drawButton(170, 186, 142, 36, "Grok >",    f, b, TFT_WHITE);
+    drawButton(8,  206, 142, 30, "< Settings", f, b, TFT_WHITE);
+    drawButton(170, 206, 142, 30, "Grok >",    f, b, TFT_WHITE);
   }
 
   _prev.claudeSession = d.claudeSession;
@@ -173,27 +173,27 @@ void Renderer::updateClaude(const UsageData& d) {
   char buf[24];
   if (d.claudeSession != _prev.claudeSession) {
     uint16_t c = progressColor(d.claudeSession);
-    _tft.fillRect(10, 44, 200, 28, TFT_BLACK);
+    _tft.fillRect(10, 52, 200, 28, TFT_BLACK);
     _tft.setTextColor(c);
     snprintf(buf, sizeof(buf), "%d%%", d.claudeSession);
-    _tft.drawString(buf, 10, 44, 4);
-    drawProgressBar(10, 70, 300, 12, d.claudeSession, c);
+    _tft.drawString(buf, 10, 52, 4);
+    drawProgressBar(10, 86, 300, 14, d.claudeSession, c);
     _prev.claudeSession = d.claudeSession;
   }
   if (d.claudeReset != _prev.claudeReset) {
-    _tft.fillRect(10, 86, 260, 16, TFT_BLACK);
+    _tft.fillRect(10, 104, 260, 16, TFT_BLACK);
     _tft.setTextColor(TFT_DARKGREY);
     formatReset(buf, sizeof(buf), d.claudeReset);
-    _tft.drawString(buf, 10, 86, 2);
+    _tft.drawString(buf, 10, 104, 2);
     _prev.claudeReset = d.claudeReset;
   }
   if (d.claudeWeekly != _prev.claudeWeekly) {
     uint16_t c = progressColor(d.claudeWeekly);
-    _tft.fillRect(10, 114, 200, 28, TFT_BLACK);
+    _tft.fillRect(10, 136, 200, 28, TFT_BLACK);
     _tft.setTextColor(c);
     snprintf(buf, sizeof(buf), "%d%%", d.claudeWeekly);
-    _tft.drawString(buf, 10, 114, 4);
-    drawProgressBar(10, 140, 300, 12, d.claudeWeekly, c);
+    _tft.drawString(buf, 10, 136, 4);
+    drawProgressBar(10, 170, 300, 14, d.claudeWeekly, c);
     _prev.claudeWeekly = d.claudeWeekly;
   }
 }
@@ -204,32 +204,32 @@ void Renderer::drawGrok(const UsageData& d) {
   char buf[8];
   _tft.fillScreen(TFT_BLACK);
   _tft.setTextColor(TFT_WHITE);
-  _tft.drawString("GROK BUILD", 10, 8, 4);
-  _tft.drawFastHLine(0, 38, 320, TFT_DARKGREY);
+  _tft.drawString("GROK BUILD", 10, 10, 4);
+  _tft.drawFastHLine(0, 44, 320, TFT_DARKGREY);
 
   uint16_t cTokens = progressColor(d.grokTokens);
   _tft.setTextColor(TFT_CYAN);
-  _tft.drawString("Tokens", 10, 50, 2);
+  _tft.drawString("Tokens", 10, 58, 2);
   _tft.setTextColor(cTokens);
   snprintf(buf, sizeof(buf), "%d%%", d.grokTokens);
-  _tft.drawString(buf, 248, 44, 4);
-  drawProgressBar(10, 70, 300, 14, d.grokTokens, cTokens);
+  _tft.drawString(buf, 240, 50, 4);
+  drawProgressBar(10, 86, 300, 14, d.grokTokens, cTokens);
 
-  _tft.drawFastHLine(0, 98, 320, TFT_DARKGREY);
+  _tft.drawFastHLine(0, 112, 320, TFT_DARKGREY);
 
   uint16_t cReqs = progressColor(d.grokRequests);
   _tft.setTextColor(TFT_CYAN);
-  _tft.drawString("Requests", 10, 110, 2);
+  _tft.drawString("Requests", 10, 126, 2);
   _tft.setTextColor(cReqs);
   snprintf(buf, sizeof(buf), "%d%%", d.grokRequests);
-  _tft.drawString(buf, 248, 104, 4);
-  drawProgressBar(10, 130, 300, 14, d.grokRequests, cReqs);
+  _tft.drawString(buf, 240, 118, 4);
+  drawProgressBar(10, 154, 300, 14, d.grokRequests, cReqs);
 
-  _tft.drawFastHLine(0, 158, 320, TFT_DARKGREY);
+  _tft.drawFastHLine(0, 180, 320, TFT_DARKGREY);
   {
     uint16_t f = _tft.color565(32,32,32), b = _tft.color565(90,90,90);
-    drawButton(8,   181, 142, 36, "< Claude",   f, b, TFT_WHITE);
-    drawButton(170, 181, 142, 36, "Settings >", f, b, TFT_WHITE);
+    drawButton(8,   190, 142, 34, "< Claude",   f, b, TFT_WHITE);
+    drawButton(170, 190, 142, 34, "Settings >", f, b, TFT_WHITE);
   }
 
   _prev.grokTokens   = d.grokTokens;
@@ -240,20 +240,20 @@ void Renderer::updateGrok(const UsageData& d) {
   char buf[8];
   if (d.grokTokens != _prev.grokTokens) {
     uint16_t c = progressColor(d.grokTokens);
-    _tft.fillRect(248, 44, 72, 28, TFT_BLACK);
+    _tft.fillRect(240, 50, 72, 28, TFT_BLACK);
     _tft.setTextColor(c);
     snprintf(buf, sizeof(buf), "%d%%", d.grokTokens);
-    _tft.drawString(buf, 248, 44, 4);
-    drawProgressBar(10, 70, 300, 14, d.grokTokens, c);
+    _tft.drawString(buf, 240, 50, 4);
+    drawProgressBar(10, 86, 300, 14, d.grokTokens, c);
     _prev.grokTokens = d.grokTokens;
   }
   if (d.grokRequests != _prev.grokRequests) {
     uint16_t c = progressColor(d.grokRequests);
-    _tft.fillRect(248, 104, 72, 28, TFT_BLACK);
+    _tft.fillRect(240, 118, 72, 28, TFT_BLACK);
     _tft.setTextColor(c);
     snprintf(buf, sizeof(buf), "%d%%", d.grokRequests);
-    _tft.drawString(buf, 248, 104, 4);
-    drawProgressBar(10, 130, 300, 14, d.grokRequests, c);
+    _tft.drawString(buf, 240, 118, 4);
+    drawProgressBar(10, 154, 300, 14, d.grokRequests, c);
     _prev.grokRequests = d.grokRequests;
   }
 }
@@ -265,56 +265,56 @@ void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval, boo
   _tft.setTextColor(TFT_WHITE);
   _tft.setTextSize(1);
   _tft.drawString("SETTINGS", 10, 8, 4);
-  _tft.drawFastHLine(0, 36, 320, TFT_DARKGREY);
+  _tft.drawFastHLine(0, 40, 320, TFT_DARKGREY);
 
   _tft.setTextColor(TFT_CYAN);
-  _tft.drawString("Brightness", 10, 44, 2);
-  _tft.drawRect(10, 58, 50, 32, TFT_DARKGREY);
+  _tft.drawString("Brightness", 10, 48, 2);
+  _tft.drawRect(10, 62, 50, 32, TFT_DARKGREY);
   _tft.setTextColor(TFT_WHITE);
-  _tft.drawString("-", 22, 63, 4);
-  _tft.drawRect(260, 58, 50, 32, TFT_DARKGREY);
-  _tft.drawString("+", 272, 63, 4);
-  _tft.drawRect(68, 58, 182, 32, TFT_DARKGREY);
+  _tft.drawString("-", 22, 67, 4);
+  _tft.drawRect(260, 62, 50, 32, TFT_DARKGREY);
+  _tft.drawString("+", 272, 67, 4);
+  _tft.drawRect(68, 62, 182, 32, TFT_DARKGREY);
   int bfill = 180 * brightness / 255;
-  _tft.fillRect(69, 59, bfill,               30, TFT_YELLOW);
-  _tft.fillRect(69 + bfill, 59, 180 - bfill, 30, TFT_BLACK);
+  _tft.fillRect(69, 63, bfill,               30, TFT_YELLOW);
+  _tft.fillRect(69 + bfill, 63, 180 - bfill, 30, TFT_BLACK);
 
-  _tft.drawFastHLine(0, 98, 320, TFT_DARKGREY);
+  _tft.drawFastHLine(0, 106, 320, TFT_DARKGREY);
 
   _tft.setTextColor(TFT_CYAN);
-  _tft.drawString("Refresh", 10, 106, 2);
+  _tft.drawString("Refresh", 10, 114, 2);
   const unsigned long intervals[3] = {30000, 60000, 120000};
   const char*         labels[3]    = {"30s", "60s", "120s"};
   const int           btnX[3]      = {10, 115, 220};
   for (int i = 0; i < 3; i++) {
     bool sel = (fetchInterval == intervals[i]);
-    _tft.drawRect(btnX[i], 122, 95, 32, sel ? TFT_GREEN : TFT_DARKGREY);
+    _tft.drawRect(btnX[i], 130, 95, 32, sel ? TFT_GREEN : TFT_DARKGREY);
     _tft.setTextColor(sel ? TFT_GREEN : TFT_WHITE);
-    _tft.drawString(labels[i], btnX[i] + 22, 130, 2);
+    _tft.drawString(labels[i], btnX[i] + 22, 138, 2);
   }
 
-  _tft.drawFastHLine(0, 162, 320, TFT_DARKGREY);
+  _tft.drawFastHLine(0, 172, 320, TFT_DARKGREY);
   drawLedToggle(ledEnabled);
-  _tft.drawRect(165, 175, 145, 32, TFT_RED);
+  _tft.drawRect(165, 180, 145, 32, TFT_RED);
   _tft.setTextColor(TFT_RED);
   _tft.setTextDatum(MC_DATUM);
-  _tft.drawString("REBOOT", 165 + 72, 175 + 16, 4);
+  _tft.drawString("REBOOT", 165 + 72, 180 + 16, 4);
   _tft.setTextDatum(TL_DATUM);
 
   {
     uint16_t f = _tft.color565(32,32,32), b = _tft.color565(90,90,90);
-    drawButton(8,   211, 142, 26, "< Grok",   f, b, TFT_WHITE);
-    drawButton(170, 211, 142, 26, "Claude >", f, b, TFT_WHITE);
+    drawButton(8,   216, 142, 22, "< Grok",   f, b, TFT_WHITE);
+    drawButton(170, 216, 142, 22, "Claude >", f, b, TFT_WHITE);
   }
 }
 
 void Renderer::drawLedToggle(bool ledEnabled) {
   uint16_t c = ledEnabled ? TFT_GREEN : TFT_DARKGREY;
-  _tft.fillRect(11, 176, 143, 30, TFT_BLACK);
-  _tft.drawRect(10, 175, 145, 32, c);
+  _tft.fillRect(11, 181, 143, 30, TFT_BLACK);
+  _tft.drawRect(10, 180, 145, 32, c);
   _tft.setTextColor(c);
   _tft.setTextDatum(MC_DATUM);
-  _tft.drawString(ledEnabled ? "LED: ON" : "LED: OFF", 10 + 72, 175 + 16, 4);
+  _tft.drawString(ledEnabled ? "LED: ON" : "LED: OFF", 10 + 72, 180 + 16, 4);
   _tft.setTextDatum(TL_DATUM);
 }
 
@@ -338,8 +338,8 @@ void Renderer::update(int screen, const UsageData& data, bool fullRedraw) {
 
 void Renderer::updateBrightnessBar(uint8_t brightness) {
   int bfill = 180 * brightness / 255;
-  _tft.fillRect(69, 59, bfill,               30, TFT_YELLOW);
-  _tft.fillRect(69 + bfill, 59, 180 - bfill, 30, TFT_BLACK);
+  _tft.fillRect(69, 63, bfill,               30, TFT_YELLOW);
+  _tft.fillRect(69 + bfill, 63, 180 - bfill, 30, TFT_BLACK);
 }
 
 void Renderer::updateLedToggle(bool ledEnabled) {
@@ -352,10 +352,10 @@ void Renderer::updateIntervalButtons(unsigned long fetchInterval) {
   const int           btnX[3]      = {10, 115, 220};
   for (int i = 0; i < 3; i++) {
     bool sel = (fetchInterval == intervals[i]);
-    _tft.fillRect(btnX[i] + 1, 123, 93, 30, TFT_BLACK);
-    _tft.drawRect(btnX[i], 122, 95, 32, sel ? TFT_GREEN : TFT_DARKGREY);
+    _tft.fillRect(btnX[i] + 1, 131, 93, 30, TFT_BLACK);
+    _tft.drawRect(btnX[i], 130, 95, 32, sel ? TFT_GREEN : TFT_DARKGREY);
     _tft.setTextColor(sel ? TFT_GREEN : TFT_WHITE);
-    _tft.drawString(labels[i], btnX[i] + 22, 130, 2);
+    _tft.drawString(labels[i], btnX[i] + 22, 138, 2);
   }
 }
 
