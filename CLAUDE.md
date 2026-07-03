@@ -1,18 +1,24 @@
 # Claude Monitor — ESP32 TFT Usage Display
 
-Displays Claude Code and Grok API usage stats on an ILI9341 320×240 display over WiFi.
+Displays Claude Code and Grok API usage stats on a 320×240 (rotated) TFT display over WiFi.
+
+**This branch (`esp32-32e-cyd`) targets a different physical board than `main`:** an
+all-in-one "3.2 ESP32-32E 240x320 Resistance Touch" module (Sunton/CYD-family clone;
+LCDWIKI SKU E32R32P/E32N32P; mfr Shenzhen Hong Shu Yuan Technology), not the hand-wired
+ILI9341 module `main` was built for. This is a hardware-swap branch, not a multi-board
+build — `platformio.ini`/`Config.h`/`TouchRouter.cpp` are all specific to this board.
 
 ## Hardware
 
 | Thing | Detail |
 |---|---|
-| MCU | ESP32 (esp32dev) |
-| Display | ILI9341 320×240, rotation 3 (landscape) |
-| Touch | XPT2046 |
-| Backlight | PWM on GPIO14 via LEDC channel 0 |
-| Status LED | GPIO2 (onboard, blinks during WiFi connect) |
+| MCU | ESP32-WROOM-32E (esp32dev) |
+| Display | ST7789P3 240×320, rotation 3 (landscape) |
+| Touch | XPT2046, calibrated (see quirks below) |
+| Backlight | PWM on GPIO27 via LEDC channel 0 |
+| Status | on-screen dot (top-right corner) during WiFi connect/reconnect — no physical LED on this board (GPIO2 is the TFT DC line) |
 
-Pins are passed to TFT_eSPI via `build_flags` in `platformio.ini` — no `User_Setup.h` needed.
+Pins are passed to TFT_eSPI via `build_flags` in `platformio.ini`, same approach as `main`.
 
 ## Build & flash
 
@@ -35,13 +41,40 @@ src/
 
 ## Critical hardware quirks
 
-### Touch x-axis is mirrored in rotation 3
-`TFT_eSPI::getTouch()` returns raw x that is inverted relative to visual pixels:
-- Low touch x → visual RIGHT side of screen
-- High touch x → visual LEFT side of screen
-- Threshold: `x < 160` = visual right, `x >= 160` = visual left
+### TFT_eSPI's own `User_Setup.h` silently overrides `platformio.ini` build_flags
+The registry copy of `bodmer/TFT_eSPI` ships a `User_Setup.h` with unguarded `#define`s
+for driver/pins. Since it's included *after* `-D` command-line flags, its `#define`s win
+silently (only visible as `"X" redefined` compiler warnings, easy to miss in normal
+build output) — the firmware can look correctly configured in `platformio.ini` while
+actually still running whatever `User_Setup.h` says. This cost a long debugging session
+on this branch: pins, driver, and flash mode all matched the physical board and it still
+rendered nothing, because `User_Setup.h` was quietly putting it back on the *old* ILI9341
+board's pins.
 
-`TouchRouter::poll()` uses `319 - x` to convert touch x to visual x before comparing against button positions (see interval buttons in settings). Navigation and brightness zones use the raw inverted x directly with explicit thresholds.
+Fix: `-DUSER_SETUP_LOADED=1` in `build_flags` (already set). This stops
+`User_Setup_Select.h` from including `User_Setup.h` at all, so the `-D` flags are the only
+source of truth. If TFT_eSPI is ever pulled from the registry again instead of the
+vendored copy in `lib/TFT_eSPI/`, keep this flag.
+
+### This board needs the panel manufacturer's ST7789 init sequence, not the stock one
+`lib/TFT_eSPI/TFT_Drivers/ST7789_Init.h` is patched with the exact sequence from
+LCDWIKI's `ST7789P3_Init.txt` for this SKU (also in their "Replaced files" Arduino demo
+package) — TFT_eSPI's generic ST7789 driver table does not bring this panel up (backlight
+lights, screen stays black). This is why the whole `TFT_eSPI` library is vendored into
+`lib/` on this branch instead of pulled from the registry via `lib_deps`.
+
+### Touch requires real calibration, not TFT_eSPI's default
+This physical XPT2046 panel's raw ADC range doesn't match TFT_eSPI's built-in default
+calibration. `Renderer::init()` calls `_tft.setTouch(calData)` with values obtained by
+running TFT_eSPI's `calibrateTouch()` against the actual hardware
+(`{433, 3490, 314, 3448, 5}` for this specific unit — re-run calibration if the touch
+panel is ever replaced).
+
+### Touch x is *not* inverted on this board (unlike `main`'s ILI9341 board)
+With real calibration applied, touch x already matches true visual x — low x = visual
+left, high x = visual right, no mirroring needed. `TouchRouter::poll()` on this branch
+uses the raw calibrated x directly against button pixel ranges. (`main`'s branch has an
+inverted-x quirk specific to that board's wiring; don't carry that logic over here.)
 
 ### LEDC API — ESP32 Arduino core 2.x
 Use the **3-call** API. Do NOT use the single-call `ledcAttach()` from core 3.x.
@@ -78,9 +111,20 @@ Three concerns, strictly separated:
 
 Global init order in `main.cpp` matters: `renderer` must be declared before `touch` because `TouchRouter touch(renderer.tft())` captures a reference to `renderer._tft`.
 
+### On-screen WiFi indicator doesn't persist across screen redraws (known limitation)
+`Renderer::drawWifiIndicator()` draws a small dot in the top-right corner, driven by a
+callback from `DataFetcher` during its WiFi connect/blink loop. Because `drawClaude()`/
+`drawGrok()`/`drawSettings()` all `fillScreen()` on a full redraw, the dot gets wiped out
+by the very next screen draw after it's set — so on a fast, already-connected boot it's
+essentially invisible. It still shows correctly during an actual prolonged WiFi outage
+(the blink loop keeps re-drawing it every ~250ms). Accepted as-is: fixing this would mean
+tracking last-known WiFi state in `Renderer` and re-drawing it after every full redraw,
+which wasn't judged worth the added coupling for a rare-to-see status indicator.
+
 ## Data source
 
-Proxy server at `http://192.168.2.131:3000` (local network). Expected JSON shape:
+Proxy server (local network, currently `http://192.168.0.58:3000` on this branch — see
+`main.cpp` for whichever WiFi network/IP is active). Expected JSON shape:
 ```json
 {
   "claude": { "session_pct": 43, "weekly_pct": 9, "reset_min": 240 },
