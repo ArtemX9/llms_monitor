@@ -560,7 +560,7 @@ Expected: upload succeeds, device reboots.
 With the device on the Claude screen, over a few minutes confirm:
 - A mascot appears in the header and idle-animates (Bot: blinks/smile-widens; Cat: blinks; Ghost/Robot: idle-cycle continues even while paused).
 - If Ghost or Robot is showing: it plays a one-time off-screen entrance, then repeatedly paces left-spot → title-spot → left-spot with visible pauses at each end, without ever leaving the screen after the first entrance.
-- The sprite never clips or flickers the "Usage" title text. If it does, adjust `TITLE_X` in `AnimatedSprite.cpp` (currently `80.0f`) down until it clears the title's left edge, then re-flash — `LANE_W` derives from `TITLE_X` automatically, so it doesn't need separate tuning.
+- The sprite never clips or flickers the "Usage" title text. If it does, adjust `TITLE_X` in `AnimatedSprite.cpp` (currently `80.0f`) down until it clears the title's left edge, then re-flash. (`draw()` only ever clears the sprite's own footprint now, not a separate wide lane, so there's no second constant to keep in sync.)
 - Every WiFi fetch / screen switch still redraws the rest of the Claude screen correctly (progress bars, percentages) — the sprite change shouldn't have disturbed `drawClaude()`/`updateClaude()`.
 - Leave it running ~5+ minutes to confirm the character changes (reroll).
 

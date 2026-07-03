@@ -22,6 +22,9 @@ private:
   unsigned long _phaseStartMs = 0;
   float         _x            = 5.0f;
   bool          _redrawNeeded = false;
+  bool          _hasDrawn     = false; // false until the first draw() call
+  int           _lastDrawX    = 5;    // previous draw()'s footprint, so draw()
+  int           _lastDrawY    = 2;    // only erases exactly what needs erasing
 
   void reroll(unsigned long nowMs);
 };

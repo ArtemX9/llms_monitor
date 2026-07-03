@@ -3,17 +3,14 @@
 #include <cmath>
 
 namespace {
-  constexpr int   LANE_H  = 44;
   constexpr int   SPRITE_Y = 2;
   constexpr float START_X = -33.0f;
   constexpr float REST_X  = 5.0f;
   // TODO: tune on hardware to clear the "Usage" title's left edge.
-  // LANE_W (below) is derived from this value — if the title clips, adjust
-  // TITLE_X and LANE_W will follow automatically; re-verify both on hardware.
   constexpr float TITLE_X = 80.0f;
 
   constexpr int SPRITE_W = 30; // 10 cols * 3px
-  constexpr int LANE_W   = int(TITLE_X) + SPRITE_W + 5; // clear of the sprite's rightmost extent with margin
+  constexpr int SPRITE_H = 36; // 12 rows * 3px
 
   constexpr unsigned long ENTER_DUR_MS       = 5000;
   constexpr unsigned long PAUSE_MS           = 2000;
@@ -132,22 +129,6 @@ void AnimatedSprite::tick(unsigned long nowMs) {
 }
 
 void AnimatedSprite::draw(TFT_eSPI& tft) {
-  // Composite the sprite into one local buffer and push it with a single
-  // pushImage() call instead of one fillRect() per pixel cell. Each fillRect()
-  // (and each pushImage()) is its own window-set-then-stream SPI sequence; the
-  // previous per-cell-fillRect approach issued ~40-90 of these per redraw, and
-  // the panel's own internal refresh could read out a partially-updated frame
-  // partway through that sequence, producing a visible tear (a black wedge
-  // cutting across the sprite). Wrapping in startWrite()/endWrite() alone
-  // (a prior attempt) did not fix this — it only prevents other SPI masters
-  // from interrupting, not the panel's own async refresh from racing a
-  // still-in-progress multi-call write. Collapsing to one fillRect (lane
-  // clear) + one pushImage (whole sprite) leaves only two transactions, so
-  // there is far less time for the race to land mid-sprite.
-  tft.startWrite();
-
-  tft.fillRect(0, 0, LANE_W, LANE_H, TFT_BLACK);
-
   const uint16_t body = tft.color565(210, 90, 42);
   const uint16_t dark = tft.color565(130, 50, 15);
 
@@ -171,7 +152,7 @@ void AnimatedSprite::draw(TFT_eSPI& tft) {
   const uint16_t bodyWire = (body >> 8) | (body << 8);
   const uint16_t darkWire = (dark >> 8) | (dark << 8);
 
-  static uint16_t buf[36][30];
+  static uint16_t buf[SPRITE_H][SPRITE_W];
   for (int r = 0; r < 12; r++) {
     for (int c = 0; c < 10; c++) {
       uint8_t v = pgm_read_byte(&frame[r][c]);
@@ -183,9 +164,28 @@ void AnimatedSprite::draw(TFT_eSPI& tft) {
       }
     }
   }
-  tft.pushImage(drawX, drawY, 30, 36, &buf[0][0]);
 
+  tft.startWrite();
+  // Erase only the sprite's previous footprint, not a large fixed-size lane.
+  // The buffer above already carries the correct final color for every pixel
+  // in the sprite's own footprint (including black for transparent cells), so
+  // the only region that ever needs a separate clear is wherever the sprite
+  // used to be but no longer is (relevant when it's moved since the last
+  // draw). A wide unconditional pre-clear was the real cause of the visible
+  // black flash on every redraw: it deliberately painted the whole lane black
+  // as a first, visible step before the sprite reappeared, every single time
+  // the picture changed — not a hardware timing race, which is why neither
+  // batching into one transaction nor consolidating to one pushImage() call
+  // (both tried previously) changed anything.
+  if (_hasDrawn && (_lastDrawX != drawX || _lastDrawY != drawY)) {
+    tft.fillRect(_lastDrawX, _lastDrawY, SPRITE_W, SPRITE_H, TFT_BLACK);
+  }
+  tft.pushImage(drawX, drawY, SPRITE_W, SPRITE_H, &buf[0][0]);
   tft.endWrite();
+
+  _lastDrawX = drawX;
+  _lastDrawY = drawY;
+  _hasDrawn  = true;
 
   _redrawNeeded = false;
 }
