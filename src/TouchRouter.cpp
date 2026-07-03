@@ -10,30 +10,28 @@ Event TouchRouter::poll(int screen) {
 
   if (screen != 2) {
     // Claude / Grok: full-screen tap navigates
-    // x < 160 = visual right (>) = forward; x >= 160 = visual left (<) = backward
-    return (x < 160) ? Event::NavForward : Event::NavBack;
+    // x < 160 = visual left (<) = backward; x >= 160 = visual right (>) = forward
+    return (x < 160) ? Event::NavBack : Event::NavForward;
   }
 
   // Settings
   if (y > 215) {
-    return (x < 160) ? Event::NavForward : Event::NavBack;
+    return (x < 160) ? Event::NavBack : Event::NavForward;
   }
   if (y >= 58 && y <= 90) {
-    if (x <= 60)  return Event::BrightnessUp;    // visual right: + button
-    if (x >= 260) return Event::BrightnessDown;  // visual left:  − button
+    if (x <= 60)  return Event::BrightnessDown;  // visual left:  − button
+    if (x >= 260) return Event::BrightnessUp;    // visual right: + button
     return Event::None;
   }
   if (y >= 122 && y <= 154) {
-    int mx = 319 - (int)x; // mirror touch x to visual x (x-axis inverted in rotation 3)
-    if (mx >= 10  && mx < 105) return Event::Interval30s;
-    if (mx >= 115 && mx < 210) return Event::Interval60s;
-    if (mx >= 220 && mx < 315) return Event::Interval120s;
+    if (x >= 10  && x < 105) return Event::Interval30s;
+    if (x >= 115 && x < 210) return Event::Interval60s;
+    if (x >= 220 && x < 315) return Event::Interval120s;
     return Event::None;
   }
   if (y >= 175 && y <= 207) {
-    int mx = 319 - (int)x; // mirror touch x to visual x (x-axis inverted in rotation 3)
-    if (mx >= 10  && mx < 155) return Event::ToggleLed;
-    if (mx >= 165 && mx < 310) return Event::Reboot;
+    if (x >= 10  && x < 155) return Event::ToggleLed;
+    if (x >= 165 && x < 310) return Event::Reboot;
     return Event::None;
   }
   return Event::None;

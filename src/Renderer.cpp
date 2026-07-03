@@ -5,12 +5,17 @@
 TFT_eSPI& Renderer::tft() { return _tft; }
 
 void Renderer::init(uint8_t brightness) {
+  _tft.init();
+  _tft.setRotation(3);
+  // Touch calibration for this specific XPT2046 panel (ESP32-32E CYD board),
+  // obtained via TFT_eSPI's calibrateTouch() — the factory default mapping
+  // does not match this unit's raw ADC range.
+  uint16_t calData[5] = {433, 3490, 314, 3448, 5};
+  _tft.setTouch(calData);
+  _tft.fillScreen(TFT_BLACK);
   ledcSetup(BL_CHANNEL, BL_FREQ, BL_RES);
   ledcAttachPin(TFT_BL_PIN, BL_CHANNEL);
   ledcWrite(BL_CHANNEL, brightness);
-  _tft.init();
-  _tft.setRotation(3);
-  _tft.fillScreen(TFT_BLACK);
 }
 
 // Pixel-art sprite: 10 cols × 12 rows, each cell = 3×3 px → 30×36 px total
