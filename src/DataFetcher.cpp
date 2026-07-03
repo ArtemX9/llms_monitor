@@ -7,32 +7,44 @@
 DataFetcher::DataFetcher(const char* ssid, const char* password, const char* url)
   : _ssid(ssid), _password(password), _url(url) {}
 
+void DataFetcher::setIndicator(bool on) {
+  if (_indicatorCallback) _indicatorCallback(_ledEnabled && on);
+}
+
 void DataFetcher::ensureWifi() {
   if (WiFi.status() == WL_CONNECTED) return;
   WiFi.disconnect(false);
   WiFi.begin(_ssid, _password);
   unsigned long t = millis();
+  bool blinkOn = false;
   while (WiFi.status() != WL_CONNECTED && millis() - t < 10000) {
-    if (_ledEnabled) digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+    blinkOn = !blinkOn;
+    setIndicator(blinkOn);
     delay(250);
   }
-  digitalWrite(LED_PIN, (_ledEnabled && WiFi.status() == WL_CONNECTED) ? HIGH : LOW);
+  setIndicator(WiFi.status() == WL_CONNECTED);
 }
 
 bool DataFetcher::connect(unsigned long timeoutMs) {
   WiFi.begin(_ssid, _password);
   unsigned long t = millis();
+  bool blinkOn = false;
   while (WiFi.status() != WL_CONNECTED && millis() - t < timeoutMs) {
-    if (_ledEnabled) digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+    blinkOn = !blinkOn;
+    setIndicator(blinkOn);
     delay(250);
   }
-  digitalWrite(LED_PIN, (_ledEnabled && WiFi.status() == WL_CONNECTED) ? HIGH : LOW);
+  setIndicator(WiFi.status() == WL_CONNECTED);
   return WiFi.status() == WL_CONNECTED;
 }
 
 void DataFetcher::setLedEnabled(bool enabled) {
   _ledEnabled = enabled;
-  digitalWrite(LED_PIN, (enabled && WiFi.status() == WL_CONNECTED) ? HIGH : LOW);
+  setIndicator(WiFi.status() == WL_CONNECTED);
+}
+
+void DataFetcher::setIndicatorCallback(void (*callback)(bool)) {
+  _indicatorCallback = callback;
 }
 
 bool DataFetcher::fetch(UsageData& out) {

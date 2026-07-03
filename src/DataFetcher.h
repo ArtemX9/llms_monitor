@@ -8,8 +8,10 @@ class DataFetcher {
   const char* _url;
   int _failures = 0;
   bool _ledEnabled = true;
+  void (*_indicatorCallback)(bool) = nullptr;
 
   void ensureWifi();
+  void setIndicator(bool on);
 
 public:
   DataFetcher(const char* ssid, const char* password, const char* url);
@@ -17,4 +19,5 @@ public:
   bool fetch(UsageData& out);
   int  consecutiveFailures() const;
   void setLedEnabled(bool enabled);
+  void setIndicatorCallback(void (*callback)(bool));
 };
