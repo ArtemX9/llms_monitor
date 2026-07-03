@@ -8,6 +8,8 @@ class DataFetcher {
   const WifiCredential* _networks;
   size_t _networkCount;
   uint16_t _proxyPort;
+  IPAddress _proxyIp;
+  bool _proxyResolved = false;
   int _failures = 0;
   bool _ledEnabled = true;
   LedSignal _lastRgbSignal = LedSignal::Red;
@@ -19,6 +21,8 @@ class DataFetcher {
   void saveCachedIp(IPAddress ip);
   void clearCachedIp();
   bool validateProxy(IPAddress ip);
+  bool scanForProxy();
+  bool resolveProxy();
   void ensureWifi();
   void setIndicator(bool on);
   void setRgb(LedSignal signal);

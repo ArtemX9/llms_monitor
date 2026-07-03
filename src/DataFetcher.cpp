@@ -1,6 +1,7 @@
 #include "DataFetcher.h"
 #include "Config.h"
 #include <WiFi.h>
+#include <WiFiClient.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
@@ -79,6 +80,37 @@ bool DataFetcher::validateProxy(IPAddress ip) {
   return valid;
 }
 
+bool DataFetcher::scanForProxy() {
+  IPAddress local = WiFi.localIP();
+  for (int host = 1; host <= 254; host++) {
+    IPAddress candidate(local[0], local[1], local[2], host);
+    if (candidate == local) continue;
+
+    WiFiClient probe;
+    bool open = probe.connect(candidate, _proxyPort, PROXY_PROBE_TIMEOUT_MS);
+    probe.stop();
+    if (!open) continue;
+
+    if (validateProxy(candidate)) {
+      saveCachedIp(candidate);
+      _proxyIp = candidate;
+      _proxyResolved = true;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool DataFetcher::resolveProxy() {
+  IPAddress cached;
+  if (loadCachedIp(cached) && validateProxy(cached)) {
+    _proxyIp = cached;
+    _proxyResolved = true;
+    return true;
+  }
+  return scanForProxy();
+}
+
 void DataFetcher::ensureWifi() {
   if (WiFi.status() == WL_CONNECTED) return;
   WiFi.disconnect(false);
@@ -119,8 +151,14 @@ bool DataFetcher::fetch(UsageData& out) {
   ensureWifi();
   if (WiFi.status() != WL_CONNECTED) { _failures++; setRgb(LedSignal::Red); return false; }
 
+  if (!_proxyResolved && !resolveProxy()) {
+    _failures++;
+    setRgb(LedSignal::Red);
+    return false;
+  }
+
   char url[40];
-  snprintf(url, sizeof(url), "http://192.168.0.58:%u/", _proxyPort);
+  snprintf(url, sizeof(url), "http://%s:%u/", _proxyIp.toString().c_str(), _proxyPort);
 
   HTTPClient http;
   http.begin(url);
