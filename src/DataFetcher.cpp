@@ -4,8 +4,8 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 
-DataFetcher::DataFetcher(const char* ssid, const char* password, const char* url)
-  : _ssid(ssid), _password(password), _url(url) {}
+DataFetcher::DataFetcher(const WifiCredential* networks, size_t networkCount, uint16_t proxyPort)
+  : _networks(networks), _networkCount(networkCount), _proxyPort(proxyPort) {}
 
 void DataFetcher::setIndicator(bool on) {
   if (_indicatorCallback) _indicatorCallback(_ledEnabled && on);
@@ -16,24 +16,8 @@ void DataFetcher::setRgb(LedSignal signal) {
   if (_rgbCallback) _rgbCallback(_ledEnabled ? signal : LedSignal::Off);
 }
 
-void DataFetcher::ensureWifi() {
-  if (WiFi.status() == WL_CONNECTED) return;
-  WiFi.disconnect(false);
-  WiFi.begin(_ssid, _password);
-  unsigned long t = millis();
-  bool blinkOn = false;
-  while (WiFi.status() != WL_CONNECTED && millis() - t < 10000) {
-    blinkOn = !blinkOn;
-    setIndicator(blinkOn);
-    setRgb(blinkOn ? LedSignal::BlueBlinkOn : LedSignal::BlueBlinkOff);
-    delay(250);
-  }
-  setIndicator(WiFi.status() == WL_CONNECTED);
-  if (WiFi.status() != WL_CONNECTED) setRgb(LedSignal::Red);
-}
-
-bool DataFetcher::connect(unsigned long timeoutMs) {
-  WiFi.begin(_ssid, _password);
+bool DataFetcher::connectToNetwork(const WifiCredential& net, unsigned long timeoutMs) {
+  WiFi.begin(net.ssid, net.password);
   unsigned long t = millis();
   bool blinkOn = false;
   while (WiFi.status() != WL_CONNECTED && millis() - t < timeoutMs) {
@@ -42,9 +26,29 @@ bool DataFetcher::connect(unsigned long timeoutMs) {
     setRgb(blinkOn ? LedSignal::BlueBlinkOn : LedSignal::BlueBlinkOff);
     delay(250);
   }
+  return WiFi.status() == WL_CONNECTED;
+}
+
+void DataFetcher::ensureWifi() {
+  if (WiFi.status() == WL_CONNECTED) return;
+  WiFi.disconnect(false);
+  for (size_t i = 0; i < _networkCount && WiFi.status() != WL_CONNECTED; i++) {
+    connectToNetwork(_networks[i], WIFI_CONNECT_TIMEOUT_MS);
+  }
   setIndicator(WiFi.status() == WL_CONNECTED);
   if (WiFi.status() != WL_CONNECTED) setRgb(LedSignal::Red);
-  return WiFi.status() == WL_CONNECTED;
+}
+
+bool DataFetcher::connect(unsigned long perNetworkTimeoutMs) {
+  for (size_t i = 0; i < _networkCount; i++) {
+    if (connectToNetwork(_networks[i], perNetworkTimeoutMs)) {
+      setIndicator(true);
+      return true;
+    }
+  }
+  setIndicator(false);
+  setRgb(LedSignal::Red);
+  return false;
 }
 
 void DataFetcher::setLedEnabled(bool enabled) {
@@ -65,8 +69,11 @@ bool DataFetcher::fetch(UsageData& out) {
   ensureWifi();
   if (WiFi.status() != WL_CONNECTED) { _failures++; setRgb(LedSignal::Red); return false; }
 
+  char url[40];
+  snprintf(url, sizeof(url), "http://192.168.0.58:%u/", _proxyPort);
+
   HTTPClient http;
-  http.begin(_url);
+  http.begin(url);
   http.setTimeout(3000);
   http.setReuse(false);
   int code = http.GET();

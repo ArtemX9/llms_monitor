@@ -6,13 +6,13 @@
 #include "Renderer.h"
 #include "TouchRouter.h"
 
-const char* ssid     = "TP-Link_4400";
-const char* password = "Chippo545454A";
-const char* proxyUrl = "http://192.168.0.58:3000";
+const WifiCredential wifiNetworks[] = {
+  { "TP-Link_4400", "Chippo545454A" },
+};
 
 AppState    state;
 UsageData   data      = {};
-DataFetcher fetcher(ssid, password, proxyUrl);
+DataFetcher fetcher(wifiNetworks, sizeof(wifiNetworks) / sizeof(wifiNetworks[0]), PROXY_PORT);
 Renderer    renderer;
 TouchRouter touch(renderer.tft());
 
