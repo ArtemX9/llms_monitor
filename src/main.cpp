@@ -8,6 +8,7 @@
 
 const WifiCredential wifiNetworks[] = {
   { "TP-Link_4400", "Chippo545454A" },
+  { "at300", "m4ruAvub" },
 };
 
 AppState    state;
