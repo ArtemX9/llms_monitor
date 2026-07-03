@@ -32,6 +32,7 @@ public:
   bool connect(unsigned long perNetworkTimeoutMs = WIFI_CONNECT_TIMEOUT_MS);
   bool fetch(UsageData& out);
   int  consecutiveFailures() const;
+  bool recoverProxy();
   void setLedEnabled(bool enabled);
   void setIndicatorCallback(void (*callback)(bool));
   void setRgbCallback(void (*callback)(LedSignal));

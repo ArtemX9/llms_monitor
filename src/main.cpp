@@ -130,7 +130,9 @@ void loop() {
       renderer.update(state.screen, data, state.needsFullRedraw);
       state.needsFullRedraw = false;
     } else if (fetcher.consecutiveFailures() >= 5) {
-      ESP.restart();
+      if (!fetcher.recoverProxy()) {
+        ESP.restart();
+      }
     }
     lastFetch = millis();
   }

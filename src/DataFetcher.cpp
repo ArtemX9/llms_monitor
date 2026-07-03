@@ -191,3 +191,13 @@ bool DataFetcher::fetch(UsageData& out) {
 }
 
 int DataFetcher::consecutiveFailures() const { return _failures; }
+
+bool DataFetcher::recoverProxy() {
+  clearCachedIp();
+  _proxyResolved = false;
+  if (scanForProxy()) {
+    _failures = 0;
+    return true;
+  }
+  return false;
+}
