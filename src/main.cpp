@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <WiFi.h>
 #include "esp_log.h"
 #include "Config.h"
 #include "Types.h"
@@ -21,6 +22,25 @@ unsigned long lastFetch = 0;
 
 void wifiIndicator(bool on) {
   renderer.drawWifiIndicator(on);
+}
+
+// Diagnostic: logs the ESP-IDF disconnect reason code so a dropped
+// connection can be told apart from AP-side vs. RF-side vs. auth causes.
+// See esp_wifi_types.h for the full reason-code list.
+void logWifiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
+  switch (event) {
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+      Serial.printf("[wifi] disconnected, reason=%d\n", info.wifi_sta_disconnected.reason);
+      break;
+    case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+      Serial.printf("[wifi] connected to %.*s\n", info.wifi_sta_connected.ssid_len,
+                    (const char*)info.wifi_sta_connected.ssid);
+      break;
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+      Serial.printf("[wifi] got IP, RSSI=%d dBm\n", WiFi.RSSI());
+      break;
+    default: break;
+  }
 }
 
 // Common anode RGB LED — LOW turns a channel ON, HIGH turns it off.
@@ -51,6 +71,7 @@ void setup() {
 
   fetcher.setIndicatorCallback(wifiIndicator);
   fetcher.setRgbCallback(rgbLed);
+  WiFi.onEvent(logWifiEvent);
 
   renderer.init(state.brightness);
   renderer.showConnecting();
