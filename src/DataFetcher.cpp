@@ -53,6 +53,32 @@ void DataFetcher::clearCachedIp() {
   prefs.end();
 }
 
+bool DataFetcher::validateProxy(IPAddress ip) {
+  char url[40];
+  snprintf(url, sizeof(url), "http://%s:%u/", ip.toString().c_str(), _proxyPort);
+
+  HTTPClient http;
+  http.begin(url);
+  http.setTimeout(PROXY_VALIDATE_TIMEOUT_MS);
+  http.setReuse(false);
+  int code = http.GET();
+
+  bool valid = false;
+  if (code == 200) {
+    JsonDocument doc;
+    if (deserializeJson(doc, http.getStream()) == DeserializationError::Ok) {
+      valid = !doc["claude"].isNull() || !doc["grok"].isNull();
+    }
+  } else if (code == 503) {
+    JsonDocument doc;
+    if (deserializeJson(doc, http.getStream()) == DeserializationError::Ok) {
+      valid = !doc["error"].isNull();
+    }
+  }
+  http.end();
+  return valid;
+}
+
 void DataFetcher::ensureWifi() {
   if (WiFi.status() == WL_CONNECTED) return;
   WiFi.disconnect(false);

@@ -18,6 +18,7 @@ class DataFetcher {
   bool loadCachedIp(IPAddress& out);
   void saveCachedIp(IPAddress ip);
   void clearCachedIp();
+  bool validateProxy(IPAddress ip);
   void ensureWifi();
   void setIndicator(bool on);
   void setRgb(LedSignal signal);
