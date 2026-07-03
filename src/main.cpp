@@ -53,6 +53,8 @@ void setup() {
 }
 
 void loop() {
+  if (state.screen == 0) renderer.tickSprite();
+
   switch (touch.poll(state.screen)) {
     case Event::NavForward:
       state.screen = (state.screen + 1) % 3;
