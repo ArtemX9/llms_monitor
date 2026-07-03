@@ -9,3 +9,9 @@
 #define LED_RED_PIN   22
 #define LED_GREEN_PIN 16
 #define LED_BLUE_PIN  17
+
+// Proxy discovery
+#define PROXY_PORT 3000
+#define WIFI_CONNECT_TIMEOUT_MS 8000
+#define PROXY_PROBE_TIMEOUT_MS 150
+#define PROXY_VALIDATE_TIMEOUT_MS 1000

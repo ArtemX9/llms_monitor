@@ -1,6 +1,11 @@
 #pragma once
 #include <Arduino.h>
 
+struct WifiCredential {
+  const char* ssid;
+  const char* password;
+};
+
 struct UsageData {
   int claudeSession, claudeWeekly, claudeReset;
   int grokTokens, grokRequests;
