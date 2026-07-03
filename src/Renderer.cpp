@@ -150,7 +150,7 @@ void Renderer::updateClaude(const UsageData& d) {
   char buf[24];
   if (d.claudeSession != _prev.claudeSession) {
     uint16_t c = progressColor(d.claudeSession);
-    _tft.fillRect(10, 52, 200, 28, TFT_BLACK);
+    _tft.fillRect(10, 52, 190, 28, TFT_BLACK);
     _tft.setTextColor(c);
     snprintf(buf, sizeof(buf), "%d%%", d.claudeSession);
     _tft.drawString(buf, 10, 52, 4);
@@ -166,7 +166,7 @@ void Renderer::updateClaude(const UsageData& d) {
   }
   if (d.claudeWeekly != _prev.claudeWeekly) {
     uint16_t c = progressColor(d.claudeWeekly);
-    _tft.fillRect(10, 136, 200, 28, TFT_BLACK);
+    _tft.fillRect(10, 136, 190, 28, TFT_BLACK);
     _tft.setTextColor(c);
     snprintf(buf, sizeof(buf), "%d%%", d.claudeWeekly);
     _tft.drawString(buf, 10, 136, 4);
