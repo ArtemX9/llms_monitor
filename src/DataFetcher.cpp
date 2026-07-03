@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include <Preferences.h>
 
 DataFetcher::DataFetcher(const WifiCredential* networks, size_t networkCount, uint16_t proxyPort)
   : _networks(networks), _networkCount(networkCount), _proxyPort(proxyPort) {}
@@ -27,6 +28,29 @@ bool DataFetcher::connectToNetwork(const WifiCredential& net, unsigned long time
     delay(250);
   }
   return WiFi.status() == WL_CONNECTED;
+}
+
+bool DataFetcher::loadCachedIp(IPAddress& out) {
+  Preferences prefs;
+  prefs.begin("netcfg", true);
+  String ip = prefs.getString("proxyIp", "");
+  prefs.end();
+  if (ip.length() == 0) return false;
+  return out.fromString(ip);
+}
+
+void DataFetcher::saveCachedIp(IPAddress ip) {
+  Preferences prefs;
+  prefs.begin("netcfg", false);
+  prefs.putString("proxyIp", ip.toString());
+  prefs.end();
+}
+
+void DataFetcher::clearCachedIp() {
+  Preferences prefs;
+  prefs.begin("netcfg", false);
+  prefs.remove("proxyIp");
+  prefs.end();
 }
 
 void DataFetcher::ensureWifi() {

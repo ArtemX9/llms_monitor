@@ -15,6 +15,9 @@ class DataFetcher {
   void (*_rgbCallback)(LedSignal) = nullptr;
 
   bool connectToNetwork(const WifiCredential& net, unsigned long timeoutMs);
+  bool loadCachedIp(IPAddress& out);
+  void saveCachedIp(IPAddress ip);
+  void clearCachedIp();
   void ensureWifi();
   void setIndicator(bool on);
   void setRgb(LedSignal signal);
