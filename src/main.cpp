@@ -6,10 +6,6 @@
 #include "Renderer.h"
 #include "TouchRouter.h"
 
-// const char* ssid     = "at300";
-// const char* password = "m4ruAvub";
-// const char* proxyUrl = "http://192.168.2.131:3000";
-
 const char* ssid     = "TP-Link_4400";
 const char* password = "Chippo545454A";
 const char* proxyUrl = "http://192.168.0.58:3000";
