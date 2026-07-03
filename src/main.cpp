@@ -18,10 +18,14 @@ TouchRouter touch(renderer.tft());
 
 unsigned long lastFetch = 0;
 
+void wifiIndicator(bool on) {
+  renderer.drawWifiIndicator(on);
+}
+
 void setup() {
   Serial.begin(115200);
   esp_log_level_set("*", ESP_LOG_NONE);
-  pinMode(LED_PIN, OUTPUT);
+  fetcher.setIndicatorCallback(wifiIndicator);
 
   renderer.init(state.brightness);
   renderer.showConnecting();
