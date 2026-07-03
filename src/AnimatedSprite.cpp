@@ -3,12 +3,17 @@
 #include <cmath>
 
 namespace {
-  constexpr int   LANE_W  = 140;
   constexpr int   LANE_H  = 44;
   constexpr int   SPRITE_Y = 2;
   constexpr float START_X = -33.0f;
   constexpr float REST_X  = 5.0f;
-  constexpr float TITLE_X = 95.0f; // TODO: tune on hardware to clear the "Usage" title's left edge
+  // TODO: tune on hardware to clear the "Usage" title's left edge.
+  // LANE_W (below) is derived from this value — if the title clips, adjust
+  // TITLE_X and LANE_W will follow automatically; re-verify both on hardware.
+  constexpr float TITLE_X = 80.0f;
+
+  constexpr int SPRITE_W = 30; // 10 cols * 3px
+  constexpr int LANE_W   = int(TITLE_X) + SPRITE_W + 5; // clear of the sprite's rightmost extent with margin
 
   constexpr unsigned long ENTER_DUR_MS       = 5000;
   constexpr unsigned long PAUSE_MS           = 2000;
