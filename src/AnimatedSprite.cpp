@@ -132,6 +132,13 @@ void AnimatedSprite::tick(unsigned long nowMs) {
 }
 
 void AnimatedSprite::draw(TFT_eSPI& tft) {
+  // Batch the whole redraw (lane clear + every per-cell fillRect) into one SPI
+  // transaction. Without this, each fillRect() opens/closes its own transaction
+  // (TFT_eSPI::fillRect -> begin_tft_write/end_tft_write), and the panel's own
+  // refresh can read out a partially-updated frame mid-sequence, producing a
+  // visible tear (seen as a black wedge cutting across the sprite).
+  tft.startWrite();
+
   tft.fillRect(0, 0, LANE_W, LANE_H, TFT_BLACK);
 
   const uint16_t body = tft.color565(210, 90, 42);
@@ -155,6 +162,8 @@ void AnimatedSprite::draw(TFT_eSPI& tft) {
       if (v) tft.fillRect(drawX + c * 3, drawY + r * 3, 3, 3, v == 1 ? body : dark);
     }
   }
+
+  tft.endWrite();
 
   _redrawNeeded = false;
 }
