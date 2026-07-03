@@ -132,11 +132,18 @@ void AnimatedSprite::tick(unsigned long nowMs) {
 }
 
 void AnimatedSprite::draw(TFT_eSPI& tft) {
-  // Batch the whole redraw (lane clear + every per-cell fillRect) into one SPI
-  // transaction. Without this, each fillRect() opens/closes its own transaction
-  // (TFT_eSPI::fillRect -> begin_tft_write/end_tft_write), and the panel's own
-  // refresh can read out a partially-updated frame mid-sequence, producing a
-  // visible tear (seen as a black wedge cutting across the sprite).
+  // Composite the sprite into one local buffer and push it with a single
+  // pushImage() call instead of one fillRect() per pixel cell. Each fillRect()
+  // (and each pushImage()) is its own window-set-then-stream SPI sequence; the
+  // previous per-cell-fillRect approach issued ~40-90 of these per redraw, and
+  // the panel's own internal refresh could read out a partially-updated frame
+  // partway through that sequence, producing a visible tear (a black wedge
+  // cutting across the sprite). Wrapping in startWrite()/endWrite() alone
+  // (a prior attempt) did not fix this — it only prevents other SPI masters
+  // from interrupting, not the panel's own async refresh from racing a
+  // still-in-progress multi-call write. Collapsing to one fillRect (lane
+  // clear) + one pushImage (whole sprite) leaves only two transactions, so
+  // there is far less time for the race to land mid-sprite.
   tft.startWrite();
 
   tft.fillRect(0, 0, LANE_W, LANE_H, TFT_BLACK);
@@ -156,12 +163,19 @@ void AnimatedSprite::draw(TFT_eSPI& tft) {
     drawY = SPRITE_Y - ((step % 2 == 0) ? 0 : HOP_BOUNCE_PX);
   }
 
+  static uint16_t buf[36][30];
   for (int r = 0; r < 12; r++) {
     for (int c = 0; c < 10; c++) {
       uint8_t v = pgm_read_byte(&frame[r][c]);
-      if (v) tft.fillRect(drawX + c * 3, drawY + r * 3, 3, 3, v == 1 ? body : dark);
+      uint16_t color = v == 0 ? TFT_BLACK : (v == 1 ? body : dark);
+      for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+          buf[r * 3 + i][c * 3 + j] = color;
+        }
+      }
     }
   }
+  tft.pushImage(drawX, drawY, 30, 36, &buf[0][0]);
 
   tft.endWrite();
 
