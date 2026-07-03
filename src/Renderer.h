@@ -1,10 +1,12 @@
 #pragma once
 #include <TFT_eSPI.h>
 #include "Types.h"
+#include "AnimatedSprite.h"
 
 class Renderer {
-  TFT_eSPI  _tft;
-  UsageData _prev = { -1, -1, -1, -1, -1 };
+  TFT_eSPI      _tft;
+  UsageData     _prev = { -1, -1, -1, -1, -1 };
+  AnimatedSprite _sprite;
 
   uint16_t progressColor(int pct);
   void drawProgressBar(int x, int y, int w, int h, int pct, uint16_t color);
@@ -34,4 +36,5 @@ public:
   void updateIntervalButtons(unsigned long fetchInterval);
   void updateLedToggle(bool ledEnabled);
   void drawWifiIndicator(bool on);
+  void tickSprite();
 };

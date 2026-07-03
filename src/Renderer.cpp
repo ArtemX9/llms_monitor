@@ -18,23 +18,6 @@ void Renderer::init(uint8_t brightness) {
   ledcWrite(BL_CHANNEL, brightness);
 }
 
-// Pixel-art sprite: 10 cols × 12 rows, each cell = 3×3 px → 30×36 px total
-// 0=transparent, 1=body, 2=accent
-static const uint8_t SPR[12][10] PROGMEM = {
-  {0,1,0,0,0,0,0,0,1,0},   // antennae
-  {0,0,0,0,0,0,0,0,0,0},
-  {0,0,1,1,1,1,1,1,0,0},   // head
-  {0,1,1,1,1,1,1,1,1,0},
-  {1,1,2,1,1,1,1,2,1,1},   // eyes
-  {1,1,1,1,1,1,1,1,1,1},
-  {0,1,2,1,1,1,1,2,1,0},   // smile
-  {0,0,1,1,1,1,1,1,0,0},
-  {0,1,1,1,1,1,1,1,1,0},   // body
-  {1,1,1,1,1,1,1,1,1,1},
-  {0,0,1,1,0,0,1,1,0,0},   // legs
-  {0,0,1,1,0,0,1,1,0,0},
-};
-
 static void formatReset(char* buf, size_t n, int minutes) {
   if (minutes >= 60) snprintf(buf, n, "Resets in %dh %dm", minutes / 60, minutes % 60);
   else               snprintf(buf, n, "Resets in %d min", minutes);
@@ -115,13 +98,7 @@ void Renderer::drawClaude(const UsageData& d) {
   _tft.fillScreen(TFT_BLACK);
 
   // ── Header: sprite + title ─────────────────────────────────────────────────
-  const uint16_t body = _tft.color565(210, 90, 42);
-  const uint16_t dark = _tft.color565(130, 50, 15);
-  for (int r = 0; r < 12; r++)
-    for (int c = 0; c < 10; c++) {
-      uint8_t v = pgm_read_byte(&SPR[r][c]);
-      if (v) _tft.fillRect(5 + c * 3, 2 + r * 3, 3, 3, v == 1 ? body : dark);
-    }
+  _sprite.draw(_tft);
 
   _tft.setFreeFont(TITLE_FONT);
   _tft.setTextColor(TFT_WHITE);
@@ -361,4 +338,9 @@ void Renderer::updateIntervalButtons(unsigned long fetchInterval) {
 
 void Renderer::drawWifiIndicator(bool on) {
   _tft.fillCircle(310, 8, 4, on ? TFT_GREEN : TFT_BLACK);
+}
+
+void Renderer::tickSprite() {
+  _sprite.tick(millis());
+  if (_sprite.needsRedraw()) _sprite.draw(_tft);
 }
