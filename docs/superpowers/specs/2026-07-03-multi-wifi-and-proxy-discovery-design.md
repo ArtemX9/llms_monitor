@@ -20,6 +20,14 @@ requires re-flashing both. This design lets the firmware:
 - No changes to the proxy server (Electron/Express app). Discovery works
   entirely from the ESP32 side by probing the subnet.
 - No support for more than 3 networks or arbitrary/unbounded network lists.
+- No handling of a non-default proxy port. The proxy server (see
+  `claude_monitor_be/src/config-store.js`) lets the user change its
+  listening port in the app's Settings window (default 3000). This
+  design assumes it stays at the default 3000 — scanning only checks
+  that port. **Known limitation**: if the port is ever changed in the
+  Electron app's Settings, the ESP32 firmware's port constant must be
+  updated and reflashed to match; discovery will not find the server on
+  a non-default port.
 
 ## Part 1 — Multi-network WiFi
 
@@ -50,9 +58,16 @@ fixed, matching today's contract with the server.
 `"proxyIp"` — stores the last-known-good proxy IP as a string.
 
 **Validation**: `validateProxy(IPAddress ip)` does a GET to
-`http://<ip>:3000/` with a short timeout and confirms the response parses
-as JSON with the expected `claude`/`grok` keys — not just "something
-answered on that port."
+`http://<ip>:3000/` with a short timeout and confirms the response
+identifies this specific server — not just "something answered on that
+port." Per `claude_monitor_be/src/server-manager.js`, the endpoint
+returns one of two valid shapes, both of which count as a match:
+  - `200` with JSON containing `claude`/`grok` keys (normal case), or
+  - `503` with JSON containing an `error` key (valid host, just polled
+    too recently after Electron app startup to have data yet — this is
+    a real state the server passes through, not a wrong host).
+Any other status code, or a body that doesn't parse as JSON matching one
+of these two shapes, is treated as "not the proxy."
 
 **Resolution flow** (`resolveProxy()`), run once after WiFi connects:
 
