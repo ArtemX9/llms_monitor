@@ -22,10 +22,34 @@ void wifiIndicator(bool on) {
   renderer.drawWifiIndicator(on);
 }
 
+// Common anode RGB LED — LOW turns a channel ON, HIGH turns it off.
+void rgbLed(LedSignal signal) {
+  bool r = false, g = false, b = false;
+  switch (signal) {
+    case LedSignal::BlueBlinkOn: b = true; break;
+    case LedSignal::Red:         r = true; break;
+    case LedSignal::Green:       g = true; break;
+    case LedSignal::BlueBlinkOff:
+    case LedSignal::Off:         break;
+  }
+  digitalWrite(LED_RED_PIN,   r ? LOW : HIGH);
+  digitalWrite(LED_GREEN_PIN, g ? LOW : HIGH);
+  digitalWrite(LED_BLUE_PIN,  b ? LOW : HIGH);
+}
+
 void setup() {
   Serial.begin(115200);
   esp_log_level_set("*", ESP_LOG_NONE);
+
+  pinMode(LED_RED_PIN,   OUTPUT);
+  pinMode(LED_GREEN_PIN, OUTPUT);
+  pinMode(LED_BLUE_PIN,  OUTPUT);
+  digitalWrite(LED_RED_PIN,   HIGH);
+  digitalWrite(LED_GREEN_PIN, HIGH);
+  digitalWrite(LED_BLUE_PIN,  HIGH);
+
   fetcher.setIndicatorCallback(wifiIndicator);
+  fetcher.setRgbCallback(rgbLed);
 
   renderer.init(state.brightness);
   renderer.showConnecting();

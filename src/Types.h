@@ -22,3 +22,12 @@ enum class Event {
   ToggleLed,
   Reboot
 };
+
+// Onboard RGB LED status — reflects WiFi/server reachability.
+enum class LedSignal {
+  Off,          // LED toggle disabled in Settings
+  BlueBlinkOn,  // WiFi connecting, blink phase on
+  BlueBlinkOff, // WiFi connecting, blink phase off
+  Red,          // no WiFi or server unreachable
+  Green         // WiFi connected and server reachable
+};

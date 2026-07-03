@@ -11,6 +11,11 @@ void DataFetcher::setIndicator(bool on) {
   if (_indicatorCallback) _indicatorCallback(_ledEnabled && on);
 }
 
+void DataFetcher::setRgb(LedSignal signal) {
+  _lastRgbSignal = signal;
+  if (_rgbCallback) _rgbCallback(_ledEnabled ? signal : LedSignal::Off);
+}
+
 void DataFetcher::ensureWifi() {
   if (WiFi.status() == WL_CONNECTED) return;
   WiFi.disconnect(false);
@@ -20,9 +25,11 @@ void DataFetcher::ensureWifi() {
   while (WiFi.status() != WL_CONNECTED && millis() - t < 10000) {
     blinkOn = !blinkOn;
     setIndicator(blinkOn);
+    setRgb(blinkOn ? LedSignal::BlueBlinkOn : LedSignal::BlueBlinkOff);
     delay(250);
   }
   setIndicator(WiFi.status() == WL_CONNECTED);
+  if (WiFi.status() != WL_CONNECTED) setRgb(LedSignal::Red);
 }
 
 bool DataFetcher::connect(unsigned long timeoutMs) {
@@ -32,24 +39,31 @@ bool DataFetcher::connect(unsigned long timeoutMs) {
   while (WiFi.status() != WL_CONNECTED && millis() - t < timeoutMs) {
     blinkOn = !blinkOn;
     setIndicator(blinkOn);
+    setRgb(blinkOn ? LedSignal::BlueBlinkOn : LedSignal::BlueBlinkOff);
     delay(250);
   }
   setIndicator(WiFi.status() == WL_CONNECTED);
+  if (WiFi.status() != WL_CONNECTED) setRgb(LedSignal::Red);
   return WiFi.status() == WL_CONNECTED;
 }
 
 void DataFetcher::setLedEnabled(bool enabled) {
   _ledEnabled = enabled;
   setIndicator(WiFi.status() == WL_CONNECTED);
+  if (_rgbCallback) _rgbCallback(enabled ? _lastRgbSignal : LedSignal::Off);
 }
 
 void DataFetcher::setIndicatorCallback(void (*callback)(bool)) {
   _indicatorCallback = callback;
 }
 
+void DataFetcher::setRgbCallback(void (*callback)(LedSignal)) {
+  _rgbCallback = callback;
+}
+
 bool DataFetcher::fetch(UsageData& out) {
   ensureWifi();
-  if (WiFi.status() != WL_CONNECTED) { _failures++; return false; }
+  if (WiFi.status() != WL_CONNECTED) { _failures++; setRgb(LedSignal::Red); return false; }
 
   HTTPClient http;
   http.begin(_url);
@@ -77,6 +91,7 @@ bool DataFetcher::fetch(UsageData& out) {
   }
   http.end();
   if (ok) _failures = 0; else _failures++;
+  setRgb(ok ? LedSignal::Green : LedSignal::Red);
   return ok;
 }
 
