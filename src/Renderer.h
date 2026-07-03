@@ -33,4 +33,5 @@ public:
   void updateBrightnessBar(uint8_t brightness);
   void updateIntervalButtons(unsigned long fetchInterval);
   void updateLedToggle(bool ledEnabled);
+  void drawWifiIndicator(bool on);
 };

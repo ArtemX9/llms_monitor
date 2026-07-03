@@ -353,3 +353,7 @@ void Renderer::updateIntervalButtons(unsigned long fetchInterval) {
     _tft.drawString(labels[i], btnX[i] + 22, 130, 2);
   }
 }
+
+void Renderer::drawWifiIndicator(bool on) {
+  _tft.fillCircle(310, 8, 4, on ? TFT_GREEN : TFT_BLACK);
+}
