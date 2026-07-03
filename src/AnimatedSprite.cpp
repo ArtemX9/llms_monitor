@@ -166,19 +166,26 @@ void AnimatedSprite::draw(TFT_eSPI& tft) {
   }
 
   tft.startWrite();
-  // Erase only the sprite's previous footprint, not a large fixed-size lane.
-  // The buffer above already carries the correct final color for every pixel
-  // in the sprite's own footprint (including black for transparent cells), so
-  // the only region that ever needs a separate clear is wherever the sprite
-  // used to be but no longer is (relevant when it's moved since the last
-  // draw). A wide unconditional pre-clear was the real cause of the visible
-  // black flash on every redraw: it deliberately painted the whole lane black
-  // as a first, visible step before the sprite reappeared, every single time
-  // the picture changed — not a hardware timing race, which is why neither
-  // batching into one transaction nor consolidating to one pushImage() call
-  // (both tried previously) changed anything.
-  if (_hasDrawn && (_lastDrawX != drawX || _lastDrawY != drawY)) {
-    tft.fillRect(_lastDrawX, _lastDrawY, SPRITE_W, SPRITE_H, TFT_BLACK);
+  // Erase only the sliver of the sprite's previous footprint that the new
+  // footprint doesn't cover — not the whole old box. The new image already
+  // carries the correct final color (including black for transparent cells)
+  // for every pixel within its own footprint, so re-clearing the part that
+  // overlaps the old footprint before pushImage() just repeats the same
+  // "black, then color" visible step the earlier lane-wide clear did, on a
+  // smaller scale. Left with only the exposed edge (typically a few px wide,
+  // since the sprite moves a short distance per tick), any residual race with
+  // the panel's own refresh has far less area/time to land in.
+  if (_hasDrawn) {
+    int dx = drawX - _lastDrawX;
+    int dy = drawY - _lastDrawY;
+    if (abs(dx) >= SPRITE_W || abs(dy) >= SPRITE_H) {
+      tft.fillRect(_lastDrawX, _lastDrawY, SPRITE_W, SPRITE_H, TFT_BLACK);
+    } else {
+      if      (dx > 0) tft.fillRect(_lastDrawX, _lastDrawY, dx, SPRITE_H, TFT_BLACK);
+      else if (dx < 0) tft.fillRect(_lastDrawX + SPRITE_W + dx, _lastDrawY, -dx, SPRITE_H, TFT_BLACK);
+      if      (dy > 0) tft.fillRect(_lastDrawX, _lastDrawY, SPRITE_W, dy, TFT_BLACK);
+      else if (dy < 0) tft.fillRect(_lastDrawX, _lastDrawY + SPRITE_H + dy, SPRITE_W, -dy, TFT_BLACK);
+    }
   }
   tft.pushImage(drawX, drawY, SPRITE_W, SPRITE_H, &buf[0][0]);
   tft.endWrite();
