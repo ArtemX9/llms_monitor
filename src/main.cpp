@@ -72,6 +72,10 @@ void setup() {
   fetcher.setIndicatorCallback(wifiIndicator);
   fetcher.setRgbCallback(rgbLed);
   WiFi.onEvent(logWifiEvent);
+  // Default modem-sleep power save causes missed beacons -> reason=200
+  // disconnect storms on this hardware; disable it before the first begin().
+  WiFi.mode(WIFI_STA);
+  WiFi.setSleep(false);
 
   renderer.init(state.brightness);
   renderer.showConnecting();
@@ -99,6 +103,7 @@ void setup() {
 }
 
 void loop() {
+  fetcher.tick();
   if (state.screen == 0) renderer.tickSprite();
 
   switch (touch.poll(state.screen)) {

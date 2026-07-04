@@ -111,14 +111,39 @@ bool DataFetcher::resolveProxy() {
   return scanForProxy();
 }
 
-void DataFetcher::ensureWifi() {
-  if (WiFi.status() == WL_CONNECTED) return;
-  WiFi.disconnect(false);
-  for (size_t i = 0; i < _networkCount && WiFi.status() != WL_CONNECTED; i++) {
-    connectToNetwork(_networks[i], WIFI_CONNECT_TIMEOUT_MS);
+void DataFetcher::tick() {
+  if (WiFi.status() == WL_CONNECTED) {
+    if (_connecting) {
+      _connecting = false;
+      setIndicator(true);
+    }
+    return;
   }
-  setIndicator(WiFi.status() == WL_CONNECTED);
-  if (WiFi.status() != WL_CONNECTED) setRgb(LedSignal::Red);
+
+  unsigned long now = millis();
+  if (!_connecting) {
+    _connecting = true;
+    _networkIndex = 0;
+    _attemptStartMs = now;
+    WiFi.disconnect(false);
+    WiFi.begin(_networks[0].ssid, _networks[0].password);
+  } else if (now - _attemptStartMs >= WIFI_CONNECT_TIMEOUT_MS) {
+    _networkIndex++;
+    if (_networkIndex >= _networkCount) {
+      // Exhausted every network this cycle; stop and let the next tick()
+      // (still disconnected) restart from network 0.
+      _connecting = false;
+      setIndicator(false);
+      setRgb(LedSignal::Red);
+      return;
+    }
+    _attemptStartMs = now;
+    WiFi.begin(_networks[_networkIndex].ssid, _networks[_networkIndex].password);
+  }
+
+  bool blinkOn = ((now / 250) % 2) == 0;
+  setIndicator(blinkOn);
+  setRgb(blinkOn ? LedSignal::BlueBlinkOn : LedSignal::BlueBlinkOff);
 }
 
 bool DataFetcher::connect(unsigned long perNetworkTimeoutMs) {
@@ -148,7 +173,6 @@ void DataFetcher::setRgbCallback(void (*callback)(LedSignal)) {
 }
 
 bool DataFetcher::fetch(UsageData& out) {
-  ensureWifi();
   if (WiFi.status() != WL_CONNECTED) { _failures++; setRgb(LedSignal::Red); return false; }
 
   if (!_proxyResolved && !resolveProxy()) {

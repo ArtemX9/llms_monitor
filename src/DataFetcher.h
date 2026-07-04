@@ -16,6 +16,11 @@ class DataFetcher {
   void (*_indicatorCallback)(bool) = nullptr;
   void (*_rgbCallback)(LedSignal) = nullptr;
 
+  // Non-blocking reconnect state, advanced by tick().
+  bool _connecting = false;
+  size_t _networkIndex = 0;
+  unsigned long _attemptStartMs = 0;
+
   bool connectToNetwork(const WifiCredential& net, unsigned long timeoutMs);
   bool loadCachedIp(IPAddress& out);
   void saveCachedIp(IPAddress ip);
@@ -23,13 +28,15 @@ class DataFetcher {
   bool validateProxy(IPAddress ip);
   bool scanForProxy();
   bool resolveProxy();
-  void ensureWifi();
   void setIndicator(bool on);
   void setRgb(LedSignal signal);
 
 public:
   DataFetcher(const WifiCredential* networks, size_t networkCount, uint16_t proxyPort);
   bool connect(unsigned long perNetworkTimeoutMs = WIFI_CONNECT_TIMEOUT_MS);
+  // Call every loop() iteration. Advances the reconnect attempt (if any)
+  // by one non-blocking step so callers never stall waiting for WiFi.
+  void tick();
   bool fetch(UsageData& out);
   int  consecutiveFailures() const;
   bool recoverProxy();
