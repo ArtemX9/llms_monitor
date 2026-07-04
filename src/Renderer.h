@@ -13,6 +13,16 @@ class Renderer {
   void drawButton(int x, int y, int w, int h, const char* label, uint16_t fill, uint16_t border, uint16_t fg);
   void drawPill(int x, int y, int w, int h, const char* label);
 
+  uint16_t colorScreenBg();
+  uint16_t colorCardBg();
+  uint16_t colorCardBorder();
+  uint16_t colorAccent();
+  uint16_t colorLabel();
+  uint16_t colorDestructive();
+  void drawCard(int x, int y, int w, int h);
+  void drawOutlineCard(int x, int y, int w, int h, uint16_t border, uint16_t fg, const char* label);
+  void drawIntervalButtons(unsigned long fetchInterval);
+
   void drawClaude(const UsageData& d);
   void updateClaude(const UsageData& d);
   void drawGrok(const UsageData& d);

@@ -1,6 +1,8 @@
 #include "Renderer.h"
 #include "Config.h"
 #define TITLE_FONT &FreeSansBold12pt7b
+#define VALUE_FONT &FreeSansBold18pt7b
+#define LABEL_FONT &FreeSans9pt7b
 
 TFT_eSPI& Renderer::tft() { return _tft; }
 
@@ -58,6 +60,32 @@ void Renderer::drawPill(int x, int y, int w, int h, const char* label) {
   _tft.setTextColor(TFT_WHITE);
   _tft.setTextDatum(MC_DATUM);
   _tft.drawString(label, x + w / 2, y + h / 2, 2);
+  _tft.setTextDatum(TL_DATUM);
+}
+
+// ── Shadcn-style palette (Settings screen) ────────────────────────────────────
+
+uint16_t Renderer::colorScreenBg()    { return _tft.color565(8, 8, 10); }
+uint16_t Renderer::colorCardBg()      { return _tft.color565(24, 24, 27); }
+uint16_t Renderer::colorCardBorder()  { return _tft.color565(63, 63, 70); }
+uint16_t Renderer::colorAccent()      { return _tft.color565(99, 102, 241); }
+uint16_t Renderer::colorLabel()       { return _tft.color565(140, 140, 145); }
+uint16_t Renderer::colorDestructive() { return _tft.color565(220, 38, 38); }
+
+void Renderer::drawCard(int x, int y, int w, int h) {
+  _tft.fillRoundRect(x, y, w, h, 6, colorCardBg());
+  _tft.drawRoundRect(x, y, w, h, 6, colorCardBorder());
+}
+
+void Renderer::drawOutlineCard(int x, int y, int w, int h,
+                                uint16_t border, uint16_t fg, const char* label) {
+  _tft.fillRoundRect(x, y, w, h, 6, colorCardBg());
+  _tft.drawRoundRect(x, y, w, h, 6, border);
+  _tft.setFreeFont(VALUE_FONT);
+  _tft.setTextColor(fg);
+  _tft.setTextDatum(MC_DATUM);
+  _tft.drawString(label, x + w / 2, y + h / 2);
+  _tft.setTextFont(0);
   _tft.setTextDatum(TL_DATUM);
 }
 
