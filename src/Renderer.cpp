@@ -224,26 +224,36 @@ void Renderer::updateClaude(const UsageData& d) {
 void Renderer::drawGrok(const UsageData& d) {
   char buf[8];
   _tft.fillScreen(TFT_BLACK);
+  _tft.setFreeFont(TITLE_FONT);
   _tft.setTextColor(TFT_WHITE);
-  _tft.drawString("GROK BUILD", 10, 10, 4);
+  _tft.drawString("GROK BUILD", 10, 10);
+  _tft.setTextFont(0);
   _tft.drawFastHLine(0, 44, 320, TFT_DARKGREY);
 
   uint16_t cTokens = progressColor(d.grokTokens);
-  _tft.setTextColor(TFT_CYAN);
-  _tft.drawString("Tokens", 10, 58, 2);
+  _tft.setFreeFont(LABEL_FONT);
+  _tft.setTextColor(colorLabel());
+  _tft.drawString("Tokens", 10, 58);
+  _tft.setTextFont(0);
+  _tft.setFreeFont(VALUE_FONT);
   _tft.setTextColor(cTokens);
   snprintf(buf, sizeof(buf), "%d%%", d.grokTokens);
-  _tft.drawString(buf, 240, 50, 4);
+  _tft.drawString(buf, 240, 50);
+  _tft.setTextFont(0);
   drawProgressBar(10, 86, 300, 14, d.grokTokens, cTokens);
 
   _tft.drawFastHLine(0, 112, 320, TFT_DARKGREY);
 
   uint16_t cReqs = progressColor(d.grokRequests);
-  _tft.setTextColor(TFT_CYAN);
-  _tft.drawString("Requests", 10, 126, 2);
+  _tft.setFreeFont(LABEL_FONT);
+  _tft.setTextColor(colorLabel());
+  _tft.drawString("Requests", 10, 126);
+  _tft.setTextFont(0);
+  _tft.setFreeFont(VALUE_FONT);
   _tft.setTextColor(cReqs);
   snprintf(buf, sizeof(buf), "%d%%", d.grokRequests);
-  _tft.drawString(buf, 240, 118, 4);
+  _tft.drawString(buf, 240, 118);
+  _tft.setTextFont(0);
   drawProgressBar(10, 154, 300, 14, d.grokRequests, cReqs);
 
   _tft.drawFastHLine(0, 180, 320, TFT_DARKGREY);
@@ -262,18 +272,22 @@ void Renderer::updateGrok(const UsageData& d) {
   if (d.grokTokens != _prev.grokTokens) {
     uint16_t c = progressColor(d.grokTokens);
     _tft.fillRect(240, 50, 72, 28, TFT_BLACK);
+    _tft.setFreeFont(VALUE_FONT);
     _tft.setTextColor(c);
     snprintf(buf, sizeof(buf), "%d%%", d.grokTokens);
-    _tft.drawString(buf, 240, 50, 4);
+    _tft.drawString(buf, 240, 50);
+    _tft.setTextFont(0);
     drawProgressBar(10, 86, 300, 14, d.grokTokens, c);
     _prev.grokTokens = d.grokTokens;
   }
   if (d.grokRequests != _prev.grokRequests) {
     uint16_t c = progressColor(d.grokRequests);
     _tft.fillRect(240, 118, 72, 28, TFT_BLACK);
+    _tft.setFreeFont(VALUE_FONT);
     _tft.setTextColor(c);
     snprintf(buf, sizeof(buf), "%d%%", d.grokRequests);
-    _tft.drawString(buf, 240, 118, 4);
+    _tft.drawString(buf, 240, 118);
+    _tft.setTextFont(0);
     drawProgressBar(10, 154, 300, 14, d.grokRequests, c);
     _prev.grokRequests = d.grokRequests;
   }
