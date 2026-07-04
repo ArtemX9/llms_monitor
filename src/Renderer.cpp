@@ -46,9 +46,11 @@ void Renderer::drawButton(int x, int y, int w, int h,
                            const char* label, uint16_t fill, uint16_t border, uint16_t fg) {
   _tft.fillRoundRect(x, y, w, h, 5, fill);
   _tft.drawRoundRect(x, y, w, h, 5, border);
+  _tft.setFreeFont(LABEL_FONT);
   _tft.setTextColor(fg);
   _tft.setTextDatum(MC_DATUM);
-  _tft.drawString(label, x + w / 2, y + h / 2, 2);
+  _tft.drawString(label, x + w / 2, y + h / 2);
+  _tft.setTextFont(0);
   _tft.setTextDatum(TL_DATUM);
 }
 
@@ -57,9 +59,11 @@ void Renderer::drawPill(int x, int y, int w, int h, const char* label) {
   uint16_t border = _tft.color565(105, 105, 105);
   _tft.fillRoundRect(x, y, w, h, h / 2, fill);
   _tft.drawRoundRect(x, y, w, h, h / 2, border);
+  _tft.setFreeFont(LABEL_FONT);
   _tft.setTextColor(TFT_WHITE);
   _tft.setTextDatum(MC_DATUM);
-  _tft.drawString(label, x + w / 2, y + h / 2, 2);
+  _tft.drawString(label, x + w / 2, y + h / 2);
+  _tft.setTextFont(0);
   _tft.setTextDatum(TL_DATUM);
 }
 
@@ -140,23 +144,29 @@ void Renderer::drawClaude(const UsageData& d) {
   // ── Session ────────────────────────────────────────────────────────────────
   uint16_t cSession = progressColor(d.claudeSession);
   snprintf(buf, sizeof(buf), "%d%%", d.claudeSession);
+  _tft.setFreeFont(VALUE_FONT);
   _tft.setTextColor(cSession);
-  _tft.drawString(buf, 10, 52, 4);
+  _tft.drawString(buf, 10, 52);
+  _tft.setTextFont(0);
 
   drawPill(206, 52, 104, 28, "Session");
 
   drawProgressBar(10, 86, 300, 14, d.claudeSession, cSession);
   formatReset(buf, sizeof(buf), d.claudeReset);
+  _tft.setFreeFont(LABEL_FONT);
   _tft.setTextColor(TFT_DARKGREY);
-  _tft.drawString(buf, 10, 104, 2);
+  _tft.drawString(buf, 10, 104);
+  _tft.setTextFont(0);
 
   _tft.drawFastHLine(0, 128, 320, TFT_DARKGREY);
 
   // ── Weekly ─────────────────────────────────────────────────────────────────
   uint16_t cWeekly = progressColor(d.claudeWeekly);
   snprintf(buf, sizeof(buf), "%d%%", d.claudeWeekly);
+  _tft.setFreeFont(VALUE_FONT);
   _tft.setTextColor(cWeekly);
-  _tft.drawString(buf, 10, 136, 4);
+  _tft.drawString(buf, 10, 136);
+  _tft.setTextFont(0);
 
   drawPill(206, 136, 104, 28, "Weekly");
 
@@ -179,25 +189,31 @@ void Renderer::updateClaude(const UsageData& d) {
   if (d.claudeSession != _prev.claudeSession) {
     uint16_t c = progressColor(d.claudeSession);
     _tft.fillRect(10, 52, 190, 28, TFT_BLACK);
+    _tft.setFreeFont(VALUE_FONT);
     _tft.setTextColor(c);
     snprintf(buf, sizeof(buf), "%d%%", d.claudeSession);
-    _tft.drawString(buf, 10, 52, 4);
+    _tft.drawString(buf, 10, 52);
+    _tft.setTextFont(0);
     drawProgressBar(10, 86, 300, 14, d.claudeSession, c);
     _prev.claudeSession = d.claudeSession;
   }
   if (d.claudeReset != _prev.claudeReset) {
     _tft.fillRect(10, 104, 260, 16, TFT_BLACK);
+    _tft.setFreeFont(LABEL_FONT);
     _tft.setTextColor(TFT_DARKGREY);
     formatReset(buf, sizeof(buf), d.claudeReset);
-    _tft.drawString(buf, 10, 104, 2);
+    _tft.drawString(buf, 10, 104);
+    _tft.setTextFont(0);
     _prev.claudeReset = d.claudeReset;
   }
   if (d.claudeWeekly != _prev.claudeWeekly) {
     uint16_t c = progressColor(d.claudeWeekly);
     _tft.fillRect(10, 136, 190, 28, TFT_BLACK);
+    _tft.setFreeFont(VALUE_FONT);
     _tft.setTextColor(c);
     snprintf(buf, sizeof(buf), "%d%%", d.claudeWeekly);
-    _tft.drawString(buf, 10, 136, 4);
+    _tft.drawString(buf, 10, 136);
+    _tft.setTextFont(0);
     drawProgressBar(10, 170, 300, 14, d.claudeWeekly, c);
     _prev.claudeWeekly = d.claudeWeekly;
   }
