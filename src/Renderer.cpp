@@ -1,8 +1,7 @@
 #include "Renderer.h"
 #include "Config.h"
-#define TITLE_FONT &FreeSansBold12pt7b
-#define VALUE_FONT &FreeSansBold12pt7b
-#define LABEL_FONT &FreeSans9pt7b
+#define TITLE_FONT &FreeSans9pt7b
+#define VALUE_FONT &FreeSans9pt7b
 
 TFT_eSPI& Renderer::tft() { return _tft; }
 
@@ -46,11 +45,9 @@ void Renderer::drawButton(int x, int y, int w, int h,
                            const char* label, uint16_t fill, uint16_t border, uint16_t fg) {
   _tft.fillRoundRect(x, y, w, h, 5, fill);
   _tft.drawRoundRect(x, y, w, h, 5, border);
-  _tft.setFreeFont(LABEL_FONT);
   _tft.setTextColor(fg);
   _tft.setTextDatum(MC_DATUM);
-  _tft.drawString(label, x + w / 2, y + h / 2);
-  _tft.setTextFont(0);
+  _tft.drawString(label, x + w / 2, y + h / 2, 2);
   _tft.setTextDatum(TL_DATUM);
 }
 
@@ -59,11 +56,9 @@ void Renderer::drawPill(int x, int y, int w, int h, const char* label) {
   uint16_t border = _tft.color565(105, 105, 105);
   _tft.fillRoundRect(x, y, w, h, h / 2, fill);
   _tft.drawRoundRect(x, y, w, h, h / 2, border);
-  _tft.setFreeFont(LABEL_FONT);
   _tft.setTextColor(TFT_WHITE);
   _tft.setTextDatum(MC_DATUM);
-  _tft.drawString(label, x + w / 2, y + h / 2);
-  _tft.setTextFont(0);
+  _tft.drawString(label, x + w / 2, y + h / 2, 2);
   _tft.setTextDatum(TL_DATUM);
 }
 
@@ -153,10 +148,8 @@ void Renderer::drawClaude(const UsageData& d) {
 
   drawProgressBar(10, 86, 300, 14, d.claudeSession, cSession);
   formatReset(buf, sizeof(buf), d.claudeReset);
-  _tft.setFreeFont(LABEL_FONT);
   _tft.setTextColor(TFT_DARKGREY);
-  _tft.drawString(buf, 10, 104);
-  _tft.setTextFont(0);
+  _tft.drawString(buf, 10, 104, 2);
 
   _tft.drawFastHLine(0, 128, 320, TFT_DARKGREY);
 
@@ -199,11 +192,9 @@ void Renderer::updateClaude(const UsageData& d) {
   }
   if (d.claudeReset != _prev.claudeReset) {
     _tft.fillRect(10, 104, 260, 16, TFT_BLACK);
-    _tft.setFreeFont(LABEL_FONT);
     _tft.setTextColor(TFT_DARKGREY);
     formatReset(buf, sizeof(buf), d.claudeReset);
-    _tft.drawString(buf, 10, 104);
-    _tft.setTextFont(0);
+    _tft.drawString(buf, 10, 104, 2);
     _prev.claudeReset = d.claudeReset;
   }
   if (d.claudeWeekly != _prev.claudeWeekly) {
@@ -231,10 +222,8 @@ void Renderer::drawGrok(const UsageData& d) {
   _tft.drawFastHLine(0, 44, 320, TFT_DARKGREY);
 
   uint16_t cTokens = progressColor(d.grokTokens);
-  _tft.setFreeFont(LABEL_FONT);
   _tft.setTextColor(colorLabel());
-  _tft.drawString("Tokens", 10, 58);
-  _tft.setTextFont(0);
+  _tft.drawString("Tokens", 10, 58, 2);
   _tft.setFreeFont(VALUE_FONT);
   _tft.setTextColor(cTokens);
   snprintf(buf, sizeof(buf), "%d%%", d.grokTokens);
@@ -245,10 +234,8 @@ void Renderer::drawGrok(const UsageData& d) {
   _tft.drawFastHLine(0, 112, 320, TFT_DARKGREY);
 
   uint16_t cReqs = progressColor(d.grokRequests);
-  _tft.setFreeFont(LABEL_FONT);
   _tft.setTextColor(colorLabel());
-  _tft.drawString("Requests", 10, 126);
-  _tft.setTextFont(0);
+  _tft.drawString("Requests", 10, 126, 2);
   _tft.setFreeFont(VALUE_FONT);
   _tft.setTextColor(cReqs);
   snprintf(buf, sizeof(buf), "%d%%", d.grokRequests);
@@ -304,10 +291,8 @@ void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval, boo
 
   // ── Brightness card ────────────────────────────────────────────────────────
   drawCard(6, 44, 308, 56);
-  _tft.setFreeFont(LABEL_FONT);
   _tft.setTextColor(colorLabel());
-  _tft.drawString("Brightness", 10, 48);
-  _tft.setTextFont(0);
+  _tft.drawString("Brightness", 10, 48, 2);
 
   _tft.fillRoundRect(10, 62, 50, 32, 5, colorCardBg());
   _tft.drawRoundRect(10, 62, 50, 32, 5, colorCardBorder());
@@ -334,10 +319,8 @@ void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval, boo
 
   // ── Refresh card ───────────────────────────────────────────────────────────
   drawCard(6, 110, 308, 58);
-  _tft.setFreeFont(LABEL_FONT);
   _tft.setTextColor(colorLabel());
-  _tft.drawString("Refresh", 10, 114);
-  _tft.setTextFont(0);
+  _tft.drawString("Refresh", 10, 114, 2);
   drawIntervalButtons(fetchInterval);
 
   // ── LED toggle + Reboot cards ──────────────────────────────────────────────
@@ -361,11 +344,9 @@ void Renderer::drawIntervalButtons(unsigned long fetchInterval) {
     uint16_t fg     = sel ? colorAccent() : TFT_WHITE;
     _tft.fillRoundRect(btnX[i], 130, 95, 32, 5, colorCardBg());
     _tft.drawRoundRect(btnX[i], 130, 95, 32, 5, border);
-    _tft.setFreeFont(LABEL_FONT);
     _tft.setTextColor(fg);
     _tft.setTextDatum(MC_DATUM);
-    _tft.drawString(labels[i], btnX[i] + 47, 146);
-    _tft.setTextFont(0);
+    _tft.drawString(labels[i], btnX[i] + 47, 146, 2);
     _tft.setTextDatum(TL_DATUM);
   }
 }
