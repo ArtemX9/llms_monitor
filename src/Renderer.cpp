@@ -91,16 +91,20 @@ void Renderer::drawOutlineCard(int x, int y, int w, int h,
 
 void Renderer::drawRebootIcon(bool armed) {
   const int cx = 22, cy = 22; // button center: origin (6,6) + half of 32x32
+  uint16_t fg, bg;
   if (armed) {
     _tft.fillRoundRect(6, 6, 32, 32, 6, colorDestructive());
-    _tft.drawArc(cx, cy, 9, 6, 45, 315, TFT_WHITE, colorDestructive());
-    _tft.fillTriangle(30, 24, 30, 31, 24, 28, TFT_WHITE);
+    fg = TFT_WHITE;
+    bg = colorDestructive();
   } else {
     _tft.fillRoundRect(6, 6, 32, 32, 6, colorCardBg());
     _tft.drawRoundRect(6, 6, 32, 32, 6, colorDestructive());
-    _tft.drawArc(cx, cy, 9, 6, 45, 315, colorDestructive(), colorCardBg());
-    _tft.fillTriangle(30, 24, 30, 31, 24, 28, colorDestructive());
+    fg = colorDestructive();
+    bg = colorCardBg();
   }
+  // Classic power symbol: ring with a gap at the top, tick crossing the gap.
+  _tft.drawArc(cx, cy, 9, 6, 210, 150, fg, bg);
+  _tft.fillRect(cx - 1, 11, 2, 7, fg);
 }
 
 // ── Status screens ────────────────────────────────────────────────────────────
@@ -368,9 +372,13 @@ void Renderer::drawIntervalButtons(unsigned long fetchInterval) {
 }
 
 void Renderer::drawLedToggle(bool ledEnabled) {
-  uint16_t c = ledEnabled ? colorLedOn() : colorDestructive();
-  _tft.fillCircle(60, 22, 8, c);   // bulb glass — button origin (44,6) + half of 32x32
-  _tft.fillRect(58, 30, 4, 3, c);  // bulb base
+  uint16_t fill = ledEnabled ? colorLedOn() : colorDestructive();
+  uint16_t trim = ledEnabled ? _tft.color565(22, 101, 52) : _tft.color565(127, 29, 29);
+  _tft.fillCircle(60, 19, 7, fill);              // bulb glass
+  _tft.drawCircle(60, 19, 7, trim);              // outline for definition
+  _tft.fillRoundRect(57, 26, 6, 4, 1, fill);     // base
+  _tft.drawRoundRect(57, 26, 6, 4, 1, trim);
+  _tft.fillRect(57, 30, 6, 2, trim);             // foot
 }
 
 // ── Public update API ─────────────────────────────────────────────────────────
