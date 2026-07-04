@@ -299,9 +299,13 @@ void Renderer::updateGrok(const UsageData& d) {
 
 void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval, bool ledEnabled) {
   _tft.fillScreen(colorScreenBg());
+
+  // ── Header: reboot icon, LED icon, title ──────────────────────────────────
+  drawRebootIcon(false);
+  drawLedToggle(ledEnabled);
   _tft.setFreeFont(TITLE_FONT);
   _tft.setTextColor(TFT_WHITE);
-  _tft.drawString("SETTINGS", 10, 8);
+  _tft.drawString("SETTINGS", 86, 8);
   _tft.setTextFont(0);
 
   // ── Brightness card ────────────────────────────────────────────────────────
@@ -338,14 +342,11 @@ void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval, boo
   _tft.drawString("Refresh", 10, 114, 2);
   drawIntervalButtons(fetchInterval);
 
-  // ── LED toggle + Reboot cards ──────────────────────────────────────────────
-  drawLedToggle(ledEnabled);
-  drawOutlineCard(165, 180, 145, 32, colorDestructive(), colorDestructive(), "REBOOT");
-
+  // ── Nav buttons (resized: height x1.3, moved up into freed space) ─────────
   {
     uint16_t f = _tft.color565(32,32,32), b = _tft.color565(90,90,90);
-    drawButton(8,   216, 142, 22, "< Grok",   f, b, TFT_WHITE);
-    drawButton(170, 216, 142, 22, "Claude >", f, b, TFT_WHITE);
+    drawButton(8,   209, 142, 29, "< Grok",   f, b, TFT_WHITE);
+    drawButton(170, 209, 142, 29, "Claude >", f, b, TFT_WHITE);
   }
 }
 
@@ -367,8 +368,9 @@ void Renderer::drawIntervalButtons(unsigned long fetchInterval) {
 }
 
 void Renderer::drawLedToggle(bool ledEnabled) {
-  uint16_t c = ledEnabled ? colorAccent() : colorCardBorder();
-  drawOutlineCard(10, 180, 145, 32, c, c, ledEnabled ? "LED: ON" : "LED: OFF");
+  uint16_t c = ledEnabled ? colorLedOn() : colorDestructive();
+  _tft.fillCircle(60, 22, 8, c);   // bulb glass — button origin (44,6) + half of 32x32
+  _tft.fillRect(58, 30, 4, 3, c);  // bulb base
 }
 
 // ── Public update API ─────────────────────────────────────────────────────────
