@@ -1,7 +1,7 @@
 #include "Renderer.h"
 #include "Config.h"
 #define TITLE_FONT &FreeSansBold12pt7b
-#define VALUE_FONT &FreeSansBold18pt7b
+#define VALUE_FONT &FreeSansBold12pt7b
 #define LABEL_FONT &FreeSans9pt7b
 
 TFT_eSPI& Renderer::tft() { return _tft; }
