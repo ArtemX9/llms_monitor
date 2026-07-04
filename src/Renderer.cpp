@@ -70,6 +70,7 @@ uint16_t Renderer::colorCardBorder()  { return _tft.color565(63, 63, 70); }
 uint16_t Renderer::colorAccent()      { return _tft.color565(99, 102, 241); }
 uint16_t Renderer::colorLabel()       { return _tft.color565(140, 140, 145); }
 uint16_t Renderer::colorDestructive() { return _tft.color565(220, 38, 38); }
+uint16_t Renderer::colorLedOn()       { return _tft.color565(34, 197, 94); }
 
 void Renderer::drawCard(int x, int y, int w, int h) {
   _tft.fillRoundRect(x, y, w, h, 6, colorCardBg());
@@ -86,6 +87,20 @@ void Renderer::drawOutlineCard(int x, int y, int w, int h,
   _tft.drawString(label, x + w / 2, y + h / 2);
   _tft.setTextFont(0);
   _tft.setTextDatum(TL_DATUM);
+}
+
+void Renderer::drawRebootIcon(bool armed) {
+  const int cx = 22, cy = 22; // button center: origin (6,6) + half of 32x32
+  if (armed) {
+    _tft.fillRoundRect(6, 6, 32, 32, 6, colorDestructive());
+    _tft.drawArc(cx, cy, 9, 6, 45, 315, TFT_WHITE, colorDestructive());
+    _tft.fillTriangle(30, 24, 30, 31, 24, 28, TFT_WHITE);
+  } else {
+    _tft.fillRoundRect(6, 6, 32, 32, 6, colorCardBg());
+    _tft.drawRoundRect(6, 6, 32, 32, 6, colorDestructive());
+    _tft.drawArc(cx, cy, 9, 6, 45, 315, colorDestructive(), colorCardBg());
+    _tft.fillTriangle(30, 24, 30, 31, 24, 28, colorDestructive());
+  }
 }
 
 // ── Status screens ────────────────────────────────────────────────────────────
@@ -382,6 +397,10 @@ void Renderer::updateBrightnessBar(uint8_t brightness) {
 
 void Renderer::updateLedToggle(bool ledEnabled) {
   drawLedToggle(ledEnabled);
+}
+
+void Renderer::updateRebootIcon(bool armed) {
+  drawRebootIcon(armed);
 }
 
 void Renderer::updateIntervalButtons(unsigned long fetchInterval) {

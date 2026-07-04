@@ -22,6 +22,8 @@ class Renderer {
   void drawCard(int x, int y, int w, int h);
   void drawOutlineCard(int x, int y, int w, int h, uint16_t border, uint16_t fg, const char* label);
   void drawIntervalButtons(unsigned long fetchInterval);
+  void drawRebootIcon(bool armed);
+  uint16_t colorLedOn();
 
   void drawClaude(const UsageData& d);
   void updateClaude(const UsageData& d);
@@ -45,6 +47,7 @@ public:
   void updateBrightnessBar(uint8_t brightness);
   void updateIntervalButtons(unsigned long fetchInterval);
   void updateLedToggle(bool ledEnabled);
+  void updateRebootIcon(bool armed);
   void drawWifiIndicator(bool on);
   void tickSprite();
 };
