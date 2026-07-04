@@ -15,7 +15,12 @@ Event TouchRouter::poll(int screen) {
   }
 
   // Settings
-  if (y > 213) {
+  if (y >= 6 && y <= 38) {
+    if (x >= 6  && x <= 38) return Event::Reboot;
+    if (x >= 44 && x <= 76) return Event::ToggleLed;
+    return Event::None;
+  }
+  if (y > 204) {
     return (x < 160) ? Event::NavBack : Event::NavForward;
   }
   if (y >= 62 && y <= 94) {
@@ -27,11 +32,6 @@ Event TouchRouter::poll(int screen) {
     if (x >= 10  && x < 105) return Event::Interval30s;
     if (x >= 115 && x < 210) return Event::Interval60s;
     if (x >= 220 && x < 315) return Event::Interval120s;
-    return Event::None;
-  }
-  if (y >= 180 && y <= 212) {
-    if (x >= 10  && x < 155) return Event::ToggleLed;
-    if (x >= 165 && x < 310) return Event::Reboot;
     return Event::None;
   }
   return Event::None;
