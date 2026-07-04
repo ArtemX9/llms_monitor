@@ -103,11 +103,13 @@ void loop() {
 
   switch (touch.poll(state.screen)) {
     case Event::NavForward:
+      if (state.screen == 2) state.rebootArmedAt = 0;
       state.screen = (state.screen + 1) % 3;
       renderer.switchTo(state.screen, data, state.brightness, state.fetchInterval, state.ledEnabled);
       state.needsFullRedraw = false;
       break;
     case Event::NavBack:
+      if (state.screen == 2) state.rebootArmedAt = 0;
       state.screen = (state.screen + 2) % 3;
       renderer.switchTo(state.screen, data, state.brightness, state.fetchInterval, state.ledEnabled);
       state.needsFullRedraw = false;
@@ -140,11 +142,21 @@ void loop() {
       renderer.updateLedToggle(state.ledEnabled);
       break;
     case Event::Reboot:
-      renderer.showRebooting();
-      delay(300);
-      ESP.restart();
+      if (state.rebootArmedAt != 0 && millis() - state.rebootArmedAt < 2000) {
+        renderer.showRebooting();
+        delay(300);
+        ESP.restart();
+      } else {
+        state.rebootArmedAt = millis();
+        renderer.updateRebootIcon(true);
+      }
       break;
     default: break;
+  }
+
+  if (state.screen == 2 && state.rebootArmedAt != 0 && millis() - state.rebootArmedAt > 2000) {
+    state.rebootArmedAt = 0;
+    renderer.updateRebootIcon(false);
   }
 
   if (millis() - lastFetch > state.fetchInterval) {

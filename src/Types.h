@@ -17,6 +17,7 @@ struct AppState {
   unsigned long fetchInterval   = 60000;
   bool          needsFullRedraw = true;
   bool          ledEnabled      = true;
+  unsigned long rebootArmedAt   = 0; // 0 = disarmed; set to millis() on first reboot-icon tap
 };
 
 enum class Event {
