@@ -266,45 +266,53 @@ void Renderer::updateGrok(const UsageData& d) {
 // ── Settings ──────────────────────────────────────────────────────────────────
 
 void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval, bool ledEnabled) {
-  _tft.fillScreen(TFT_BLACK);
+  _tft.fillScreen(colorScreenBg());
+  _tft.setFreeFont(TITLE_FONT);
   _tft.setTextColor(TFT_WHITE);
-  _tft.setTextSize(1);
-  _tft.drawString("SETTINGS", 10, 8, 4);
-  _tft.drawFastHLine(0, 40, 320, TFT_DARKGREY);
+  _tft.drawString("SETTINGS", 10, 8);
+  _tft.setTextFont(0);
 
-  _tft.setTextColor(TFT_CYAN);
-  _tft.drawString("Brightness", 10, 48, 2);
-  _tft.drawRect(10, 62, 50, 32, TFT_DARKGREY);
+  // ── Brightness card ────────────────────────────────────────────────────────
+  drawCard(6, 44, 308, 56);
+  _tft.setFreeFont(LABEL_FONT);
+  _tft.setTextColor(colorLabel());
+  _tft.drawString("Brightness", 10, 48);
+  _tft.setTextFont(0);
+
+  _tft.fillRoundRect(10, 62, 50, 32, 5, colorCardBg());
+  _tft.drawRoundRect(10, 62, 50, 32, 5, colorCardBorder());
+  _tft.setFreeFont(VALUE_FONT);
   _tft.setTextColor(TFT_WHITE);
-  _tft.drawString("-", 22, 67, 4);
-  _tft.drawRect(260, 62, 50, 32, TFT_DARKGREY);
-  _tft.drawString("+", 272, 67, 4);
-  _tft.drawRect(68, 62, 182, 32, TFT_DARKGREY);
-  int bfill = 180 * brightness / 255;
-  _tft.fillRect(69, 63, bfill,               30, TFT_YELLOW);
-  _tft.fillRect(69 + bfill, 63, 180 - bfill, 30, TFT_BLACK);
-
-  _tft.drawFastHLine(0, 106, 320, TFT_DARKGREY);
-
-  _tft.setTextColor(TFT_CYAN);
-  _tft.drawString("Refresh", 10, 114, 2);
-  const unsigned long intervals[3] = {30000, 60000, 120000};
-  const char*         labels[3]    = {"30s", "60s", "120s"};
-  const int           btnX[3]      = {10, 115, 220};
-  for (int i = 0; i < 3; i++) {
-    bool sel = (fetchInterval == intervals[i]);
-    _tft.drawRect(btnX[i], 130, 95, 32, sel ? TFT_GREEN : TFT_DARKGREY);
-    _tft.setTextColor(sel ? TFT_GREEN : TFT_WHITE);
-    _tft.drawString(labels[i], btnX[i] + 22, 138, 2);
-  }
-
-  _tft.drawFastHLine(0, 172, 320, TFT_DARKGREY);
-  drawLedToggle(ledEnabled);
-  _tft.drawRect(165, 180, 145, 32, TFT_RED);
-  _tft.setTextColor(TFT_RED);
   _tft.setTextDatum(MC_DATUM);
-  _tft.drawString("REBOOT", 165 + 72, 180 + 16, 4);
+  _tft.drawString("-", 35, 78);
+  _tft.setTextFont(0);
   _tft.setTextDatum(TL_DATUM);
+
+  _tft.fillRoundRect(260, 62, 50, 32, 5, colorCardBg());
+  _tft.drawRoundRect(260, 62, 50, 32, 5, colorCardBorder());
+  _tft.setFreeFont(VALUE_FONT);
+  _tft.setTextColor(TFT_WHITE);
+  _tft.setTextDatum(MC_DATUM);
+  _tft.drawString("+", 285, 78);
+  _tft.setTextFont(0);
+  _tft.setTextDatum(TL_DATUM);
+
+  _tft.drawRoundRect(68, 62, 182, 32, 5, colorCardBorder());
+  int bfill = 180 * brightness / 255;
+  _tft.fillRect(69, 63, bfill,               30, colorAccent());
+  _tft.fillRect(69 + bfill, 63, 180 - bfill, 30, colorCardBg());
+
+  // ── Refresh card ───────────────────────────────────────────────────────────
+  drawCard(6, 110, 308, 58);
+  _tft.setFreeFont(LABEL_FONT);
+  _tft.setTextColor(colorLabel());
+  _tft.drawString("Refresh", 10, 114);
+  _tft.setTextFont(0);
+  drawIntervalButtons(fetchInterval);
+
+  // ── LED toggle + Reboot cards ──────────────────────────────────────────────
+  drawLedToggle(ledEnabled);
+  drawOutlineCard(165, 180, 145, 32, colorDestructive(), colorDestructive(), "REBOOT");
 
   {
     uint16_t f = _tft.color565(32,32,32), b = _tft.color565(90,90,90);
@@ -313,14 +321,28 @@ void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval, boo
   }
 }
 
+void Renderer::drawIntervalButtons(unsigned long fetchInterval) {
+  const unsigned long intervals[3] = {30000, 60000, 120000};
+  const char*         labels[3]    = {"30s", "60s", "120s"};
+  const int           btnX[3]      = {10, 115, 220};
+  for (int i = 0; i < 3; i++) {
+    bool sel = (fetchInterval == intervals[i]);
+    uint16_t border = sel ? colorAccent() : colorCardBorder();
+    uint16_t fg     = sel ? colorAccent() : TFT_WHITE;
+    _tft.fillRoundRect(btnX[i], 130, 95, 32, 5, colorCardBg());
+    _tft.drawRoundRect(btnX[i], 130, 95, 32, 5, border);
+    _tft.setFreeFont(LABEL_FONT);
+    _tft.setTextColor(fg);
+    _tft.setTextDatum(MC_DATUM);
+    _tft.drawString(labels[i], btnX[i] + 47, 146);
+    _tft.setTextFont(0);
+    _tft.setTextDatum(TL_DATUM);
+  }
+}
+
 void Renderer::drawLedToggle(bool ledEnabled) {
-  uint16_t c = ledEnabled ? TFT_GREEN : TFT_DARKGREY;
-  _tft.fillRect(11, 181, 143, 30, TFT_BLACK);
-  _tft.drawRect(10, 180, 145, 32, c);
-  _tft.setTextColor(c);
-  _tft.setTextDatum(MC_DATUM);
-  _tft.drawString(ledEnabled ? "LED: ON" : "LED: OFF", 10 + 72, 180 + 16, 4);
-  _tft.setTextDatum(TL_DATUM);
+  uint16_t c = ledEnabled ? colorAccent() : colorCardBorder();
+  drawOutlineCard(10, 180, 145, 32, c, c, ledEnabled ? "LED: ON" : "LED: OFF");
 }
 
 // ── Public update API ─────────────────────────────────────────────────────────
@@ -343,8 +365,8 @@ void Renderer::update(int screen, const UsageData& data, bool fullRedraw) {
 
 void Renderer::updateBrightnessBar(uint8_t brightness) {
   int bfill = 180 * brightness / 255;
-  _tft.fillRect(69, 63, bfill,               30, TFT_YELLOW);
-  _tft.fillRect(69 + bfill, 63, 180 - bfill, 30, TFT_BLACK);
+  _tft.fillRect(69, 63, bfill,               30, colorAccent());
+  _tft.fillRect(69 + bfill, 63, 180 - bfill, 30, colorCardBg());
 }
 
 void Renderer::updateLedToggle(bool ledEnabled) {
@@ -352,16 +374,7 @@ void Renderer::updateLedToggle(bool ledEnabled) {
 }
 
 void Renderer::updateIntervalButtons(unsigned long fetchInterval) {
-  const unsigned long intervals[3] = {30000, 60000, 120000};
-  const char*         labels[3]    = {"30s", "60s", "120s"};
-  const int           btnX[3]      = {10, 115, 220};
-  for (int i = 0; i < 3; i++) {
-    bool sel = (fetchInterval == intervals[i]);
-    _tft.fillRect(btnX[i] + 1, 131, 93, 30, TFT_BLACK);
-    _tft.drawRect(btnX[i], 130, 95, 32, sel ? TFT_GREEN : TFT_DARKGREY);
-    _tft.setTextColor(sel ? TFT_GREEN : TFT_WHITE);
-    _tft.drawString(labels[i], btnX[i] + 22, 138, 2);
-  }
+  drawIntervalButtons(fetchInterval);
 }
 
 void Renderer::drawWifiIndicator(bool on) {
