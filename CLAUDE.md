@@ -71,8 +71,9 @@ calibration. The original rotation-3 baseline (`{433, 3490, 314, 3448, 5}`, obta
 running TFT_eSPI's `calibrateTouch()` against the actual hardware) is now the **seed**
 `Renderer::applyTouchCalibration()` derives all four rotations' 5-word calData from in
 code — swapping axis roles and invert bits per rotation rather than re-running hardware
-calibration for each one. The portrait (rotation 0/2) invert bits are the derived-but-
-hardware-verified part of that table. Each rotation can also be overridden permanently: a
+calibration for each one. The portrait (rotation 0/2) invert bits are the uncertain part
+of that table — derived by reasoning, not yet confirmed on hardware; if a rotation reads
+mirrored, the recalibrate gesture below fixes it. Each rotation can also be overridden permanently: a
 long-press (≥800ms) on the Settings rotate icon runs TFT_eSPI's `calibrateTouch()` for the
 *current* rotation and persists the result to NVS (`netcfg` keys `cal0`…`cal3`, 10-byte
 blobs — see `Renderer::recalibrate()`, `NvsConfig::loadCal`/`saveCal`), which then takes
