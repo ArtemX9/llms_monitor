@@ -23,3 +23,6 @@
 #define BAT_MIN_MV       3300  // maps to 0%
 #define BAT_MAX_MV       4200  // maps to 100%
 #define BAT_LOW_PCT      15    // battery icon renders red at/below this
+#define BAT_CHG_RISE_MV     15  // mV delta beyond which a reading counts as "rising"/"falling" (else "flat")
+#define BAT_CHG_RISE_STREAK 3   // consecutive rising reads required to enter "charging"
+#define BAT_CHG_FALL_STREAK 2   // consecutive falling reads required to exit "charging"
