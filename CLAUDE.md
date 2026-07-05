@@ -1,6 +1,6 @@
 # Claude Monitor — ESP32 TFT Usage Display
 
-Displays Claude Code and Grok API usage stats on a 320×240 (rotated) TFT display over WiFi.
+Displays Claude Code and Grok API usage stats on a 320×240/240×320 (user-selectable rotation) TFT display over WiFi.
 
 **This branch (`esp32-32e-cyd`) targets a different physical board than `main`:** an
 all-in-one "3.2 ESP32-32E 240x320 Resistance Touch" module (Sunton/CYD-family clone;
@@ -13,7 +13,7 @@ build — `platformio.ini`/`Config.h`/`TouchRouter.cpp` are all specific to this
 | Thing | Detail |
 |---|---|
 | MCU | ESP32-WROOM-32E (esp32dev) |
-| Display | ST7789P3 240×320, rotation 3 (landscape) |
+| Display | ST7789P3 240×320, all 4 TFT_eSPI rotations supported (landscape 320×240 and portrait 240×320); user-selectable in Settings, persisted in NVS, defaults to rotation 3 (landscape) |
 | Touch | XPT2046, calibrated (see quirks below) |
 | Backlight | PWM on GPIO27 via LEDC channel 0 |
 | Status | on-screen dot (top-right corner) during WiFi connect/reconnect — no physical LED on this board (GPIO2 is the TFT DC line) |
@@ -67,16 +67,26 @@ lights, screen stays black). This is why the whole `TFT_eSPI` library is vendore
 
 ### Touch requires real calibration, not TFT_eSPI's default
 This physical XPT2046 panel's raw ADC range doesn't match TFT_eSPI's built-in default
-calibration. `Renderer::init()` calls `_tft.setTouch(calData)` with values obtained by
-running TFT_eSPI's `calibrateTouch()` against the actual hardware
-(`{433, 3490, 314, 3448, 5}` for this specific unit — re-run calibration if the touch
-panel is ever replaced).
+calibration. The original rotation-3 baseline (`{433, 3490, 314, 3448, 5}`, obtained by
+running TFT_eSPI's `calibrateTouch()` against the actual hardware) is now the **seed**
+`Renderer::applyTouchCalibration()` derives all four rotations' 5-word calData from in
+code — swapping axis roles and invert bits per rotation rather than re-running hardware
+calibration for each one. The portrait (rotation 0/2) invert bits are the derived-but-
+hardware-verified part of that table. Each rotation can also be overridden permanently: a
+long-press (≥800ms) on the Settings rotate icon runs TFT_eSPI's `calibrateTouch()` for the
+*current* rotation and persists the result to NVS (`netcfg` keys `cal0`…`cal3`, 10-byte
+blobs — see `Renderer::recalibrate()`, `NvsConfig::loadCal`/`saveCal`), which then takes
+priority over the derived default for that rotation on every future boot. Re-run
+recalibration on any rotation if the touch panel is ever replaced.
 
-### Touch x is *not* inverted on this board (unlike `main`'s ILI9341 board)
-With real calibration applied, touch x already matches true visual x — low x = visual
-left, high x = visual right, no mirroring needed. `TouchRouter::poll()` on this branch
-uses the raw calibrated x directly against button pixel ranges. (`main`'s branch has an
-inverted-x quirk specific to that board's wiring; don't carry that logic over here.)
+### Touch zones are geometry-aware, not just x-orientation-aware
+With real calibration applied, touch coordinates already match true visual coordinates in
+every rotation — no mirroring needed. `TouchRouter::poll()` now branches on
+`_tft.width()` (≥320 = landscape 320×240, else portrait 240×320) and uses a separate set
+of button pixel ranges for each orientation, since the two layouts place buttons at
+different coordinates. (`main`'s branch still has an inverted-x quirk specific to that
+board's wiring; don't carry that logic over here — this board's raw touch x has never
+needed inversion in either orientation.)
 
 ### LEDC API — ESP32 Arduino core 2.x
 Use the **3-call** API. Do NOT use the single-call `ledcAttach()` from core 3.x.
@@ -139,7 +149,7 @@ path instead of falling back to a per-pixel loop.
 Three concerns, strictly separated:
 
 - **DataFetcher** — owns WiFi state and HTTP. Constructor takes a list of `WifiCredential` networks, tried in priority order (`WIFI_CONNECT_TIMEOUT_MS` ≈ 8 s per network). `fetch()` auto-reconnects internally and resolves the proxy server dynamically (see "Data source" below) rather than hitting a fixed URL. Tracks consecutive failures; caller restarts after 5 (see "Proxy recovery" below).
-- **Renderer** — pure drawing. Receives all needed values as parameters. Exposes `tft()` ref so TouchRouter can call `getTouch()` without owning the hardware.
+- **Renderer** — pure drawing. Receives all needed values as parameters. Exposes `tft()` ref so TouchRouter can call `getTouch()` without owning the hardware. `setRotation()` applies the rotation to the TFT, re-applies touch calibration for that rotation (`applyTouchCalibration()`), and updates the sprite header width to match. Each screen (Claude, Grok, Settings) has a separate landscape and portrait draw/update path, selected internally by `portrait()` (true for rotation 0/2).
 - **TouchRouter** — calls `getTouch()`, interprets zones by current screen, returns an `Event`. Never touches display or mutates state.
 - **AppState** (struct in `Types.h`) — `screen`, `brightness`, `fetchInterval`, `needsFullRedraw`. Owned exclusively by `loop()`.
 - **AnimatedSprite** — owns the Claude-screen header mascot's animation state (character choice, frame, patrol position). `Renderer::tickSprite()` calls `tick(millis())` then `draw()` only if something changed; driven from `loop()` independently of the WiFi-fetch timer, only while on the Claude screen. Character pixel data lives in `SpriteData.h`, separate from the state machine.
@@ -172,7 +182,13 @@ checks a cached IP (ESP32 NVS, namespace `netcfg`, key `proxyIp`) by validating 
 the real proxy; if that fails or nothing is cached, it scans the local `/24` subnet on port
 `PROXY_PORT` (3000, fixed) for a host that responds with the expected JSON shape below.
 `main.cpp` declares a `wifiNetworks[]` array of `{ssid, password}` pairs instead of a
-single hardcoded network/IP. Expected JSON shape:
+single hardcoded network/IP.
+
+The same `netcfg` namespace also stores display orientation state: `rot`, a `uint8`
+holding the current rotation (0–3), and `cal0`…`cal3`, 10-byte blobs holding the
+per-rotation touch calibration override — see the touch calibration quirk above.
+
+Expected JSON shape:
 ```json
 {
   "claude": { "session_pct": 43, "weekly_pct": 9, "reset_min": 240 },
