@@ -8,6 +8,7 @@ class Renderer {
   TFT_eSPI      _tft;
   UsageData     _prev = { -1, -1, -1, -1, -1 };
   int           _batteryPct = 100;
+  bool          _batteryCharging = false;
   AnimatedSprite _sprite;
 
   uint8_t _rotation = 3;
@@ -30,7 +31,7 @@ class Renderer {
   void drawIntervalButtons(unsigned long fetchInterval);
   void drawRebootIcon(bool armed);
   void drawRotateIcon();
-  void drawBatteryIcon(int pct);
+  void drawBatteryIcon(int pct, bool charging);
   uint16_t colorLedOn();
 
   void drawClaude(const UsageData& d);
@@ -65,6 +66,6 @@ public:
   void updateLedToggle(bool ledEnabled);
   void updateRebootIcon(bool armed);
   void drawWifiIndicator(bool on);
-  void setBattery(int pct);
+  void setBattery(int pct, bool charging);
   void tickSprite();
 };

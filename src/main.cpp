@@ -85,7 +85,8 @@ void setup() {
   renderer.showConnecting();
 
   battery.init();
-  renderer.setBattery(battery.readPercent());
+  int pct = battery.readPercent();
+  renderer.setBattery(pct, battery.isCharging());
 
   if (fetcher.connect()) {
     bool ok = false;
@@ -190,7 +191,8 @@ void loop() {
   }
 
   if (millis() - lastFetch > state.fetchInterval) {
-    renderer.setBattery(battery.readPercent());
+    int pct = battery.readPercent();
+    renderer.setBattery(pct, battery.isCharging());
     if (fetcher.fetch(data)) {
       renderer.update(state.screen, data, state.needsFullRedraw);
       state.needsFullRedraw = false;

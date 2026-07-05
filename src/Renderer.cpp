@@ -204,7 +204,7 @@ void Renderer::drawClaude(const UsageData& d) {
   if (portrait()) { drawClaudePortrait(d); return; }
   char buf[24];
   _tft.fillScreen(TFT_BLACK);
-  drawBatteryIcon(_batteryPct);
+  drawBatteryIcon(_batteryPct, _batteryCharging);
 
   // ── Header: sprite + title ─────────────────────────────────────────────────
   _sprite.draw(_tft);
@@ -296,7 +296,7 @@ void Renderer::updateClaude(const UsageData& d) {
 void Renderer::drawClaudePortrait(const UsageData& d) {
   char buf[24];
   _tft.fillScreen(TFT_BLACK);
-  drawBatteryIcon(_batteryPct);
+  drawBatteryIcon(_batteryPct, _batteryCharging);
 
   // Header: sprite + title
   _sprite.draw(_tft);
@@ -384,7 +384,7 @@ void Renderer::drawGrok(const UsageData& d) {
   if (portrait()) { drawGrokPortrait(d); return; }
   char buf[8];
   _tft.fillScreen(TFT_BLACK);
-  drawBatteryIcon(_batteryPct);
+  drawBatteryIcon(_batteryPct, _batteryCharging);
   _tft.setFreeFont(TITLE_FONT);
   _tft.setTextColor(TFT_WHITE);
   _tft.drawString("GROK BUILD", 10, 10);
@@ -454,7 +454,7 @@ void Renderer::updateGrok(const UsageData& d) {
 void Renderer::drawGrokPortrait(const UsageData& d) {
   char buf[8];
   _tft.fillScreen(TFT_BLACK);
-  drawBatteryIcon(_batteryPct);
+  drawBatteryIcon(_batteryPct, _batteryCharging);
   _tft.setFreeFont(TITLE_FONT);
   _tft.setTextColor(TFT_WHITE);
   _tft.drawString("GROK BUILD", 10, 12);
@@ -525,7 +525,7 @@ void Renderer::updateGrokPortrait(const UsageData& d) {
 void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval, bool ledEnabled) {
   if (portrait()) { drawSettingsPortrait(brightness, fetchInterval, ledEnabled); return; }
   _tft.fillScreen(colorScreenBg());
-  drawBatteryIcon(_batteryPct);
+  drawBatteryIcon(_batteryPct, _batteryCharging);
 
   // ── Header: reboot icon, LED icon, title ──────────────────────────────────
   drawRebootIcon(false);
@@ -597,7 +597,7 @@ void Renderer::drawIntervalButtons(unsigned long fetchInterval) {
 
 void Renderer::drawSettingsPortrait(uint8_t brightness, unsigned long fetchInterval, bool ledEnabled) {
   _tft.fillScreen(colorScreenBg());
-  drawBatteryIcon(_batteryPct);
+  drawBatteryIcon(_batteryPct, _batteryCharging);
 
   // Header: reboot icon, LED icon, title (rotate icon added in Task 7)
   drawRebootIcon(false);
@@ -728,7 +728,7 @@ void Renderer::drawWifiIndicator(bool on) {
   _tft.fillCircle(_tft.width() - 10, 8, 4, on ? TFT_GREEN : TFT_BLACK);
 }
 
-void Renderer::drawBatteryIcon(int pct) {
+void Renderer::drawBatteryIcon(int pct, bool charging) {
   if (pct < 0)   pct = 0;
   if (pct > 100) pct = 100;
   uint16_t color = (pct > BAT_LOW_PCT) ? TFT_GREEN : colorDestructive();
@@ -748,11 +748,21 @@ void Renderer::drawBatteryIcon(int pct) {
 
   drawProgressBar(_tft.width() - 42, 4, 16, 8, pct, color);
   _tft.fillRect(_tft.width() - 26, 6, 2, 4, color); // nub
+
+  if (charging) {
+    // drawProgressBar's border occupies rows y=4 and y=11 of this 16x8
+    // body; the fill interior is rows y=5..10. Keep the bolt inside that
+    // interior band so it doesn't touch the border stroke.
+    int bx = _tft.width() - 42; // body's left edge, matches drawProgressBar's x above
+    _tft.drawLine(bx + 9, 5,  bx + 6, 8,  TFT_WHITE);
+    _tft.drawLine(bx + 6, 8,  bx + 10, 10, TFT_WHITE);
+  }
 }
 
-void Renderer::setBattery(int pct) {
+void Renderer::setBattery(int pct, bool charging) {
   _batteryPct = pct;
-  drawBatteryIcon(_batteryPct);
+  _batteryCharging = charging;
+  drawBatteryIcon(_batteryPct, _batteryCharging);
 }
 
 void Renderer::tickSprite() {
