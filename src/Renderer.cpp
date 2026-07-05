@@ -722,6 +722,33 @@ void Renderer::drawWifiIndicator(bool on) {
   _tft.fillCircle(_tft.width() - 10, 8, 4, on ? TFT_GREEN : TFT_BLACK);
 }
 
+void Renderer::drawBatteryIcon(int pct) {
+  if (pct < 0)   pct = 0;
+  if (pct > 100) pct = 100;
+  uint16_t color = (pct > BAT_LOW_PCT) ? TFT_GREEN : colorDestructive();
+
+  // Clear the previous frame's text+icon in one step so a shrinking
+  // percentage (e.g. "100%" -> "9%") never leaves a stray digit.
+  _tft.fillRect(_tft.width() - 72, 2, 50, 12, TFT_BLACK);
+
+  char buf[6];
+  snprintf(buf, sizeof(buf), "%d%%", pct);
+  _tft.setTextFont(1);
+  _tft.setTextColor(color);
+  _tft.setTextDatum(MR_DATUM);
+  _tft.drawString(buf, _tft.width() - 45, 8);
+  _tft.setTextFont(0);
+  _tft.setTextDatum(TL_DATUM);
+
+  drawProgressBar(_tft.width() - 42, 4, 16, 8, pct, color);
+  _tft.fillRect(_tft.width() - 26, 6, 2, 4, color); // nub
+}
+
+void Renderer::setBattery(int pct) {
+  _batteryPct = pct;
+  drawBatteryIcon(_batteryPct);
+}
+
 void Renderer::tickSprite() {
   _sprite.tick(millis());
   if (_sprite.needsRedraw()) _sprite.draw(_tft);
