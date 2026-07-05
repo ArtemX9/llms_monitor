@@ -204,6 +204,7 @@ void Renderer::drawClaude(const UsageData& d) {
   if (portrait()) { drawClaudePortrait(d); return; }
   char buf[24];
   _tft.fillScreen(TFT_BLACK);
+  drawBatteryIcon(_batteryPct);
 
   // ── Header: sprite + title ─────────────────────────────────────────────────
   _sprite.draw(_tft);
@@ -295,6 +296,7 @@ void Renderer::updateClaude(const UsageData& d) {
 void Renderer::drawClaudePortrait(const UsageData& d) {
   char buf[24];
   _tft.fillScreen(TFT_BLACK);
+  drawBatteryIcon(_batteryPct);
 
   // Header: sprite + title
   _sprite.draw(_tft);
@@ -382,6 +384,7 @@ void Renderer::drawGrok(const UsageData& d) {
   if (portrait()) { drawGrokPortrait(d); return; }
   char buf[8];
   _tft.fillScreen(TFT_BLACK);
+  drawBatteryIcon(_batteryPct);
   _tft.setFreeFont(TITLE_FONT);
   _tft.setTextColor(TFT_WHITE);
   _tft.drawString("GROK BUILD", 10, 10);
@@ -451,6 +454,7 @@ void Renderer::updateGrok(const UsageData& d) {
 void Renderer::drawGrokPortrait(const UsageData& d) {
   char buf[8];
   _tft.fillScreen(TFT_BLACK);
+  drawBatteryIcon(_batteryPct);
   _tft.setFreeFont(TITLE_FONT);
   _tft.setTextColor(TFT_WHITE);
   _tft.drawString("GROK BUILD", 10, 12);
@@ -521,6 +525,7 @@ void Renderer::updateGrokPortrait(const UsageData& d) {
 void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval, bool ledEnabled) {
   if (portrait()) { drawSettingsPortrait(brightness, fetchInterval, ledEnabled); return; }
   _tft.fillScreen(colorScreenBg());
+  drawBatteryIcon(_batteryPct);
 
   // ── Header: reboot icon, LED icon, title ──────────────────────────────────
   drawRebootIcon(false);
@@ -592,6 +597,7 @@ void Renderer::drawIntervalButtons(unsigned long fetchInterval) {
 
 void Renderer::drawSettingsPortrait(uint8_t brightness, unsigned long fetchInterval, bool ledEnabled) {
   _tft.fillScreen(colorScreenBg());
+  drawBatteryIcon(_batteryPct);
 
   // Header: reboot icon, LED icon, title (rotate icon added in Task 7)
   drawRebootIcon(false);

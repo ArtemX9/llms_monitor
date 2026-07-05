@@ -7,6 +7,7 @@
 #include "Renderer.h"
 #include "NvsConfig.h"
 #include "TouchRouter.h"
+#include "Battery.h"
 
 const WifiCredential wifiNetworks[] = {
   { "TP-Link_4400", "Chippo545454A" },
@@ -17,6 +18,7 @@ AppState    state;
 UsageData   data      = {};
 DataFetcher fetcher(wifiNetworks, sizeof(wifiNetworks) / sizeof(wifiNetworks[0]), PROXY_PORT);
 Renderer    renderer;
+Battery     battery;
 TouchRouter touch(renderer.tft());
 
 unsigned long lastFetch = 0;
@@ -81,6 +83,9 @@ void setup() {
   state.rotation = NvsConfig::loadRotation(3);
   renderer.init(state.rotation, state.brightness);
   renderer.showConnecting();
+
+  battery.init();
+  renderer.setBattery(battery.readPercent());
 
   if (fetcher.connect()) {
     bool ok = false;
@@ -185,6 +190,7 @@ void loop() {
   }
 
   if (millis() - lastFetch > state.fetchInterval) {
+    renderer.setBattery(battery.readPercent());
     if (fetcher.fetch(data)) {
       renderer.update(state.screen, data, state.needsFullRedraw);
       state.needsFullRedraw = false;
