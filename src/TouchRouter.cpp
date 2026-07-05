@@ -4,17 +4,21 @@ TouchRouter::TouchRouter(TFT_eSPI& tft) : _tft(tft) {}
 
 Event TouchRouter::poll(int screen) {
   uint16_t x, y;
-  bool touched = _tft.getTouch(&x, &y);
+  bool touched   = _tft.getTouch(&x, &y);
+  bool touchDown = touched && !_wasTouched;  // rising edge: first poll of a new press
+  _wasTouched    = touched;
 
   // Rotate-icon press tracking (Settings only). Header icon zone x[82,114] y[6,38].
-  // A press that BEGINS on the icon is tracked until the finger truly lifts, so
-  // drifting off the 32px icon mid-press (common on resistive touch) neither
-  // fires a spurious cycle nor restarts the long-press timer.
+  // Tracking starts only when a press first LANDS on the icon (touch-down edge in
+  // the zone), so a drag that began elsewhere and slid onto the icon is ignored.
+  // Once claimed, the press is tracked until the finger truly lifts, so drifting
+  // off the 32px icon mid-press (common on resistive touch) neither fires a
+  // spurious cycle nor restarts the long-press timer.
   if (screen == 2) {
     bool inRotZone = touched && x >= 82 && x <= 114 && y >= 6 && y <= 38;
     if (touched) {
-      // Start tracking only when the press first lands on the icon.
-      if (_rotPressStart == 0 && inRotZone) { _rotPressStart = millis(); _rotLongFired = false; }
+      // Claim the press only on the touch-down that first lands on the icon.
+      if (_rotPressStart == 0 && touchDown && inRotZone) { _rotPressStart = millis(); _rotLongFired = false; }
       if (_rotPressStart != 0) {
         // Press originated on the icon; hold the decision until true release,
         // regardless of whether the finger has since drifted off the icon.

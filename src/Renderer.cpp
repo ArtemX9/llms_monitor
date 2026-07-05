@@ -599,7 +599,11 @@ void Renderer::drawSettingsPortrait(uint8_t brightness, unsigned long fetchInter
   drawRotateIcon();
   _tft.setFreeFont(TITLE_FONT);
   _tft.setTextColor(TFT_WHITE);
-  _tft.drawString("SETTINGS", 120, 8);
+  // Centered in the space right of the three header icons (x 6..114),
+  // vertically aligned with the icon row (y 6..38).
+  _tft.setTextDatum(MC_DATUM);
+  _tft.drawString("SETTINGS", 178, 22);
+  _tft.setTextDatum(TL_DATUM);
   _tft.setTextFont(0);
 
   // Brightness card
