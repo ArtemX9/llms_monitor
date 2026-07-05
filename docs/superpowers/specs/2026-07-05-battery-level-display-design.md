@@ -104,7 +104,7 @@ rotation):
 | Element | Position | Notes |
 |---|---|---|
 | Clear rect (drawn first) | `x=width()-72, y=2, w=50, h=12`, fill `TFT_BLACK` | Erases the previous frame's text/icon in one step before redrawing, so a shrinking percentage ("100%"→"9%") never leaves a stray digit. `TFT_BLACK` is used even on the Settings screen (whose actual background is `colorScreenBg()`, `rgb(8,8,10)`) — the two are visually indistinguishable at this darkness, so `drawBatteryIcon` stays screen-agnostic rather than taking a background-color parameter for an imperceptible difference. |
-| Percent text | `MR_DATUM` at `(width()-45, 8)`, built-in font 1 | Right-aligned so it always butts up against the icon regardless of digit count. |
+| Percent text | `setTextFont(1)`, `setTextColor(color)`, `MR_DATUM` at `(width()-45, 8)` | Right-aligned so it always butts up against the icon regardless of digit count. Font, color, and datum are explicit on every call (not inherited from whatever the previous drawing statement left set) — same discipline the rest of `Renderer.cpp` already follows around every temporary `setFreeFont`/`setTextDatum` use (e.g. `drawClaude`'s `setTextDatum(MC_DATUM)` / `setTextDatum(TL_DATUM)` pair). Resets to `setTextFont(0)` / `setTextDatum(TL_DATUM)` before returning so it never leaves state for whichever draw call runs next. |
 | Battery body | `drawProgressBar(width()-42, 4, 16, 8, pct, color)` | Reuses the existing progress-bar helper as-is (border + proportional fill) instead of writing new border/fill logic — it already does exactly what a battery body needs. |
 | Nub | `fillRect(width()-26, 6, 2, 4, color)` | The one bit of new drawing code needed; `drawProgressBar` has no concept of a battery nub. |
 
@@ -118,7 +118,20 @@ This block sits at `x ≈ width()-72..width()-24`, `y=2..14` — clear of the
 WiFi dot (`width()-10, r=4`, occupying `width()-14..width()-6`) with a 10px
 gap, and clear of every screen's existing header content (title text, the
 Settings header icon buttons, and the Claude-screen sprite, whose patrol is
-capped at `headerWidth/4` — far left of this corner) in both orientations.
+capped at `headerWidth/4` — far left of this corner) in both landscape
+orientations and in portrait Claude/Grok.
+
+**Unverified risk — portrait Settings only:** `drawSettingsPortrait` centers
+`"SETTINGS"` at `x=178`, explicitly chosen (per its own comment) as the
+midpoint of the *entire* free zone from the header icons (ending `x=114`) to
+the screen edge (`x=240`) — i.e. it was laid out assuming it may use close
+to the full available width up to 240. Static analysis can't confirm the
+actual rendered glyph width of that `FreeSans9pt7b` string, so overlap with
+this design's icon zone (starting at `x=168`) can't be ruled out without
+running it on hardware. **This must be checked during implementation/testing**;
+if it overlaps, the fix is narrowing the title's centering zone (e.g. center
+within `114..168` instead of `114..240`), a one-line coordinate change in
+`drawSettingsPortrait`, not a rework of this design.
 
 **New state:** `int _batteryPct = 100;` member (mirrors `_prev` as
 Renderer-owned display state, not `AppState` — nothing outside Renderer needs
@@ -191,7 +204,10 @@ physically connected:
 
 - Battery icon renders in the top-right corner on all three screens, in both
   landscape and portrait, without colliding with the WiFi dot, titles, sprite,
-  or Settings header icons.
+  or Settings header icons — **specifically check portrait Settings**, the
+  one placement this design couldn't verify statically (see the flagged risk
+  above); narrow the title's centering zone in `drawSettingsPortrait` if it
+  overlaps.
 - Percentage number and fill level are plausible against a multimeter
   reading of the battery voltage (allowing for the linear approximation).
 - Unplugging USB (battery-only power) and replugging it doesn't change the
