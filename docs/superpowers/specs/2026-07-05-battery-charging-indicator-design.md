@@ -303,3 +303,39 @@ No automated test harness exists for this embedded project. Verification is
   floating-pin note from the level-indicator feature's final review — not
   a regression, just worth knowing if the bolt ever flickers on right after
   a physical jostle of the connector rather than an actual USB plug-in.
+
+### Hardware verification outcome (2026-07-05)
+
+Tested on the real board (LP405090 connected to JP2, charged from both a
+MacBook Pro's USB-C port and a phone/tablet powerbank). Findings:
+
+- The battery-level reading itself behaves correctly and as physically
+  expected: resting (no USB) read ~47%; under either charger the reading
+  rose to ~60-65% and settled there, then reverted to ~47% within moments
+  of disconnecting. This is normal Li-ion behavior (terminal voltage under
+  charge current sits above true resting state-of-charge due to internal
+  resistance) — not a bug, and it confirms the ADC/divider path is sound.
+- The charging bolt did **not** reliably appear. Temporary diagnostic
+  logging (added and removed during this investigation, never committed)
+  showed why: at this board's charge rate and the user's 120s fetch
+  interval, real consecutive-reading deltas were only 0-4mV. Two problems
+  compound: (1) `esp_adc_cal_raw_to_voltage()` returns 1mV resolution,
+  doubled by the divider math to 2mV steps, so most individual ticks read
+  `delta=0` purely from quantization, not noise; (2) the occasional
+  non-zero jumps (+2/+4mV) were never *consecutive* — there were always
+  zero-delta ticks between them — so `BAT_CHG_RISE_STREAK`'s requirement
+  of 3 **consecutive** rising reads structurally cannot be satisfied by
+  data shaped like this, regardless of how low `BAT_CHG_RISE_MV` is set.
+- One retuning pass was applied based on this data (`BAT_SAMPLE_COUNT`
+  8→32 to reduce ADC noise, `BAT_CHG_RISE_MV` 15→4 to match the observed
+  rate) — a genuine improvement over the original untested guess, but it
+  does not fix the structural consecutive-tick problem above.
+- The real fix would be comparing each reading against one from several
+  ticks further back (e.g. 5 ticks ≈ 10 minutes at this interval) instead
+  of only the immediately-previous reading, so real accumulated drift
+  becomes distinguishable from single-step quantization — a materially
+  bigger design change (needs a small rolling history, not just
+  `_lastMv`). **Decided not to pursue this** — the feature is accepted as
+  a best-effort approximation with this known gap: the bolt may fail to
+  appear during slow or near-full charging even though charging is
+  genuinely happening. Documented in `Config.h` alongside the constants.
