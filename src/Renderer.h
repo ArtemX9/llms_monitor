@@ -28,6 +28,7 @@ class Renderer {
   void drawOutlineCard(int x, int y, int w, int h, uint16_t border, uint16_t fg, const char* label);
   void drawIntervalButtons(unsigned long fetchInterval);
   void drawRebootIcon(bool armed);
+  void drawRotateIcon();
   uint16_t colorLedOn();
 
   void drawClaude(const UsageData& d);
@@ -47,6 +48,7 @@ public:
   TFT_eSPI& tft();
   void init(uint8_t rotation, uint8_t brightness);
   void setRotation(uint8_t rotation);
+  void recalibrate(uint8_t rotation);
 
   void showConnecting();
   void showWifiFailed();

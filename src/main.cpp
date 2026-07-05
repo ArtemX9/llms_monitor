@@ -158,6 +158,22 @@ void loop() {
         renderer.updateRebootIcon(true);
       }
       break;
+    case Event::CycleRotation: {
+      static const uint8_t order[4] = {3, 0, 1, 2};
+      int idx = 0;
+      for (int i = 0; i < 4; i++) if (order[i] == state.rotation) { idx = i; break; }
+      state.rotation = order[(idx + 1) % 4];
+      renderer.setRotation(state.rotation);
+      NvsConfig::saveRotation(state.rotation);
+      renderer.switchTo(state.screen, data, state.brightness, state.fetchInterval, state.ledEnabled);
+      state.needsFullRedraw = false;
+      break;
+    }
+    case Event::Recalibrate:
+      renderer.recalibrate(state.rotation);
+      renderer.switchTo(state.screen, data, state.brightness, state.fetchInterval, state.ledEnabled);
+      state.needsFullRedraw = false;
+      break;
     default: break;
   }
 

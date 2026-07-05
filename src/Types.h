@@ -27,7 +27,9 @@ enum class Event {
   BrightnessUp, BrightnessDown,
   Interval30s, Interval60s, Interval120s,
   ToggleLed,
-  Reboot
+  Reboot,
+  CycleRotation,
+  Recalibrate
 };
 
 // Onboard RGB LED status — reflects WiFi/server reachability.

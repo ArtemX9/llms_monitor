@@ -133,6 +133,32 @@ void Renderer::drawRebootIcon(bool armed) {
   _tft.fillRect(cx - 1, 11, 2, 7, fg);
 }
 
+// Small circular-arrow "rotate" glyph in a header icon button at (82,6,32,32).
+void Renderer::drawRotateIcon() {
+  const int cx = 98, cy = 22; // origin (82,6) + half of 32x32
+  _tft.fillRoundRect(82, 6, 32, 32, 6, colorCardBg());
+  _tft.drawRoundRect(82, 6, 32, 32, 6, colorCardBorder());
+  uint16_t fg = TFT_WHITE;
+  // ~300-degree arc leaves a gap for the arrowhead.
+  _tft.drawArc(cx, cy, 9, 7, 30, 330, fg, colorCardBg());
+  // Arrowhead near the top-right gap.
+  _tft.fillTriangle(cx + 9, cy - 6, cx + 3, cy - 8, cx + 10, cy + 1, fg);
+}
+
+// Runs TFT_eSPI's interactive corner-tap calibration for the current rotation
+// and persists the result so it overrides the derived default from then on.
+void Renderer::recalibrate(uint8_t rotation) {
+  uint16_t cal[5];
+  _tft.fillScreen(TFT_BLACK);
+  _tft.setTextColor(TFT_WHITE);
+  _tft.setTextDatum(MC_DATUM);
+  _tft.drawString("Tap each arrow", _tft.width()/2, _tft.height()/2, 2);
+  _tft.setTextDatum(TL_DATUM);
+  _tft.calibrateTouch(cal, TFT_WHITE, TFT_BLACK, 15);
+  _tft.setTouch(cal);
+  NvsConfig::saveCal(rotation, cal);
+}
+
 // ── Status screens ────────────────────────────────────────────────────────────
 
 void Renderer::showConnecting() {
@@ -498,9 +524,10 @@ void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval, boo
   // ── Header: reboot icon, LED icon, title ──────────────────────────────────
   drawRebootIcon(false);
   drawLedToggle(ledEnabled);
+  drawRotateIcon();
   _tft.setFreeFont(TITLE_FONT);
   _tft.setTextColor(TFT_WHITE);
-  _tft.drawString("SETTINGS", 86, 8);
+  _tft.drawString("SETTINGS", 130, 8);
   _tft.setTextFont(0);
 
   // ── Brightness card ────────────────────────────────────────────────────────
@@ -568,6 +595,7 @@ void Renderer::drawSettingsPortrait(uint8_t brightness, unsigned long fetchInter
   // Header: reboot icon, LED icon, title (rotate icon added in Task 7)
   drawRebootIcon(false);
   drawLedToggle(ledEnabled);
+  drawRotateIcon();
   _tft.setFreeFont(TITLE_FONT);
   _tft.setTextColor(TFT_WHITE);
   _tft.drawString("SETTINGS", 120, 8);
