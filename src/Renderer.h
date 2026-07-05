@@ -39,6 +39,8 @@ class Renderer {
   void drawGrokPortrait(const UsageData& d);
   void updateGrokPortrait(const UsageData& d);
   void drawSettings(uint8_t brightness, unsigned long fetchInterval, bool ledEnabled);
+  void drawSettingsPortrait(uint8_t brightness, unsigned long fetchInterval, bool ledEnabled);
+  void drawIntervalButtonsPortrait(unsigned long fetchInterval);
   void drawLedToggle(bool ledEnabled);
 
 public:

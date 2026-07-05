@@ -137,29 +137,37 @@ void Renderer::drawRebootIcon(bool armed) {
 void Renderer::showConnecting() {
   _tft.fillScreen(TFT_BLACK);
   _tft.setTextColor(TFT_WHITE);
-  _tft.drawString("Connecting...", 60, 100, 4);
+  _tft.setTextDatum(MC_DATUM);
+  _tft.drawString("Connecting...", _tft.width()/2, _tft.height()/2, 4);
+  _tft.setTextDatum(TL_DATUM);
 }
 
 void Renderer::showWifiFailed() {
   _tft.fillScreen(TFT_BLACK);
+  _tft.setTextDatum(MC_DATUM);
   _tft.setTextColor(TFT_RED);
-  _tft.drawString("WiFi failed", 60, 90, 4);
+  _tft.drawString("WiFi failed", _tft.width()/2, _tft.height()/2 - 20, 4);
   _tft.setTextColor(TFT_DARKGREY);
-  _tft.drawString("Retrying in 30s...", 70, 130, 2);
+  _tft.drawString("Retrying in 30s...", _tft.width()/2, _tft.height()/2 + 20, 2);
+  _tft.setTextDatum(TL_DATUM);
 }
 
 void Renderer::showServerError() {
   _tft.fillScreen(TFT_BLACK);
+  _tft.setTextDatum(MC_DATUM);
   _tft.setTextColor(TFT_RED);
-  _tft.drawString("Server error", 60, 90, 4);
+  _tft.drawString("Server error", _tft.width()/2, _tft.height()/2 - 20, 4);
   _tft.setTextColor(TFT_DARKGREY);
-  _tft.drawString("Retrying...", 100, 130, 2);
+  _tft.drawString("Retrying...", _tft.width()/2, _tft.height()/2 + 20, 2);
+  _tft.setTextDatum(TL_DATUM);
 }
 
 void Renderer::showRebooting() {
   _tft.fillScreen(TFT_BLACK);
   _tft.setTextColor(TFT_WHITE);
-  _tft.drawString("Rebooting...", 60, 100, 4);
+  _tft.setTextDatum(MC_DATUM);
+  _tft.drawString("Rebooting...", _tft.width()/2, _tft.height()/2, 4);
+  _tft.setTextDatum(TL_DATUM);
 }
 
 // ── Claude ────────────────────────────────────────────────────────────────────
@@ -483,6 +491,7 @@ void Renderer::updateGrokPortrait(const UsageData& d) {
 // ── Settings ──────────────────────────────────────────────────────────────────
 
 void Renderer::drawSettings(uint8_t brightness, unsigned long fetchInterval, bool ledEnabled) {
+  if (portrait()) { drawSettingsPortrait(brightness, fetchInterval, ledEnabled); return; }
   _tft.fillScreen(colorScreenBg());
 
   // ── Header: reboot icon, LED icon, title ──────────────────────────────────
@@ -552,6 +561,76 @@ void Renderer::drawIntervalButtons(unsigned long fetchInterval) {
   }
 }
 
+void Renderer::drawSettingsPortrait(uint8_t brightness, unsigned long fetchInterval, bool ledEnabled) {
+  _tft.fillScreen(colorScreenBg());
+
+  // Header: reboot icon, LED icon, title (rotate icon added in Task 7)
+  drawRebootIcon(false);
+  drawLedToggle(ledEnabled);
+  _tft.setFreeFont(TITLE_FONT);
+  _tft.setTextColor(TFT_WHITE);
+  _tft.drawString("SETTINGS", 120, 8);
+  _tft.setTextFont(0);
+
+  // Brightness card
+  drawCard(6, 44, 228, 56);
+  _tft.setTextColor(colorLabel());
+  _tft.drawString("Brightness", 10, 48, 2);
+
+  _tft.fillRoundRect(10, 62, 44, 32, 5, colorCardBg());
+  _tft.drawRoundRect(10, 62, 44, 32, 5, colorCardBorder());
+  _tft.setFreeFont(VALUE_FONT);
+  _tft.setTextColor(TFT_WHITE);
+  _tft.setTextDatum(MC_DATUM);
+  _tft.drawString("-", 32, 78);
+  _tft.setTextFont(0);
+  _tft.setTextDatum(TL_DATUM);
+
+  _tft.fillRoundRect(186, 62, 44, 32, 5, colorCardBg());
+  _tft.drawRoundRect(186, 62, 44, 32, 5, colorCardBorder());
+  _tft.setFreeFont(VALUE_FONT);
+  _tft.setTextColor(TFT_WHITE);
+  _tft.setTextDatum(MC_DATUM);
+  _tft.drawString("+", 208, 78);
+  _tft.setTextFont(0);
+  _tft.setTextDatum(TL_DATUM);
+
+  _tft.drawRoundRect(60, 62, 120, 32, 5, colorCardBorder());
+  int bfill = 118 * brightness / 255;
+  _tft.fillRect(61, 63, bfill,               30, colorAccent());
+  _tft.fillRect(61 + bfill, 63, 118 - bfill, 30, colorCardBg());
+
+  // Refresh card
+  drawCard(6, 110, 228, 58);
+  _tft.setTextColor(colorLabel());
+  _tft.drawString("Refresh", 10, 114, 2);
+  drawIntervalButtonsPortrait(fetchInterval);
+
+  // Nav buttons at bottom
+  {
+    uint16_t f = _tft.color565(32,32,32), b = _tft.color565(90,90,90);
+    drawButton(6,   282, 112, 30, "< Grok",   f, b, TFT_WHITE);
+    drawButton(122, 282, 112, 30, "Claude >", f, b, TFT_WHITE);
+  }
+}
+
+void Renderer::drawIntervalButtonsPortrait(unsigned long fetchInterval) {
+  const unsigned long intervals[3] = {30000, 60000, 120000};
+  const char*         labels[3]    = {"30s", "60s", "120s"};
+  const int           btnX[3]      = {8, 84, 160};
+  for (int i = 0; i < 3; i++) {
+    bool sel = (fetchInterval == intervals[i]);
+    uint16_t border = sel ? colorAccent() : colorCardBorder();
+    uint16_t fg     = sel ? colorAccent() : TFT_WHITE;
+    _tft.fillRoundRect(btnX[i], 130, 72, 32, 5, colorCardBg());
+    _tft.drawRoundRect(btnX[i], 130, 72, 32, 5, border);
+    _tft.setTextColor(fg);
+    _tft.setTextDatum(MC_DATUM);
+    _tft.drawString(labels[i], btnX[i] + 36, 146, 2);
+    _tft.setTextDatum(TL_DATUM);
+  }
+}
+
 void Renderer::drawLedToggle(bool ledEnabled) {
   uint16_t fill = ledEnabled ? colorLedOn() : colorDestructive();
   uint16_t trim = ledEnabled ? _tft.color565(22, 101, 52) : _tft.color565(127, 29, 29);
@@ -581,6 +660,12 @@ void Renderer::update(int screen, const UsageData& data, bool fullRedraw) {
 }
 
 void Renderer::updateBrightnessBar(uint8_t brightness) {
+  if (portrait()) {
+    int bfill = 118 * brightness / 255;
+    _tft.fillRect(61, 63, bfill,               30, colorAccent());
+    _tft.fillRect(61 + bfill, 63, 118 - bfill, 30, colorCardBg());
+    return;
+  }
   int bfill = 180 * brightness / 255;
   _tft.fillRect(69, 63, bfill,               30, colorAccent());
   _tft.fillRect(69 + bfill, 63, 180 - bfill, 30, colorCardBg());
@@ -595,11 +680,12 @@ void Renderer::updateRebootIcon(bool armed) {
 }
 
 void Renderer::updateIntervalButtons(unsigned long fetchInterval) {
+  if (portrait()) { drawIntervalButtonsPortrait(fetchInterval); return; }
   drawIntervalButtons(fetchInterval);
 }
 
 void Renderer::drawWifiIndicator(bool on) {
-  _tft.fillCircle(310, 8, 4, on ? TFT_GREEN : TFT_BLACK);
+  _tft.fillCircle(_tft.width() - 10, 8, 4, on ? TFT_GREEN : TFT_BLACK);
 }
 
 void Renderer::tickSprite() {
