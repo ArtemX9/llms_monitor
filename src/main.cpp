@@ -159,6 +159,7 @@ void loop() {
       }
       break;
     case Event::CycleRotation: {
+      state.rebootArmedAt = 0; // switchTo redraws the reboot icon disarmed; keep state in sync
       static const uint8_t order[4] = {3, 0, 1, 2};
       int idx = 0;
       for (int i = 0; i < 4; i++) if (order[i] == state.rotation) { idx = i; break; }
@@ -170,6 +171,7 @@ void loop() {
       break;
     }
     case Event::Recalibrate:
+      state.rebootArmedAt = 0; // recalibrate + switchTo redraw the reboot icon disarmed
       renderer.recalibrate(state.rotation);
       renderer.switchTo(state.screen, data, state.brightness, state.fetchInterval, state.ledEnabled);
       state.needsFullRedraw = false;
