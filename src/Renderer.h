@@ -36,6 +36,8 @@ class Renderer {
   void updateClaudePortrait(const UsageData& d);
   void drawGrok(const UsageData& d);
   void updateGrok(const UsageData& d);
+  void drawGrokPortrait(const UsageData& d);
+  void updateGrokPortrait(const UsageData& d);
   void drawSettings(uint8_t brightness, unsigned long fetchInterval, bool ledEnabled);
   void drawLedToggle(bool ledEnabled);
 

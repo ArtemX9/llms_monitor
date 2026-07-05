@@ -343,6 +343,7 @@ void Renderer::updateClaudePortrait(const UsageData& d) {
 // ── Grok ──────────────────────────────────────────────────────────────────────
 
 void Renderer::drawGrok(const UsageData& d) {
+  if (portrait()) { drawGrokPortrait(d); return; }
   char buf[8];
   _tft.fillScreen(TFT_BLACK);
   _tft.setFreeFont(TITLE_FONT);
@@ -385,6 +386,7 @@ void Renderer::drawGrok(const UsageData& d) {
 }
 
 void Renderer::updateGrok(const UsageData& d) {
+  if (portrait()) { updateGrokPortrait(d); return; }
   char buf[8];
   if (d.grokTokens != _prev.grokTokens) {
     uint16_t c = progressColor(d.grokTokens);
@@ -406,6 +408,74 @@ void Renderer::updateGrok(const UsageData& d) {
     _tft.drawString(buf, 240, 118);
     _tft.setTextFont(0);
     drawProgressBar(10, 154, 300, 14, d.grokRequests, c);
+    _prev.grokRequests = d.grokRequests;
+  }
+}
+
+void Renderer::drawGrokPortrait(const UsageData& d) {
+  char buf[8];
+  _tft.fillScreen(TFT_BLACK);
+  _tft.setFreeFont(TITLE_FONT);
+  _tft.setTextColor(TFT_WHITE);
+  _tft.drawString("GROK BUILD", 10, 12);
+  _tft.setTextFont(0);
+  _tft.drawFastHLine(0, 44, 240, TFT_DARKGREY);
+
+  uint16_t cTokens = progressColor(d.grokTokens);
+  _tft.setTextColor(colorLabel());
+  _tft.drawString("Tokens", 10, 62, 2);
+  _tft.setFreeFont(VALUE_FONT);
+  _tft.setTextColor(cTokens);
+  snprintf(buf, sizeof(buf), "%d%%", d.grokTokens);
+  _tft.drawString(buf, 170, 54);
+  _tft.setTextFont(0);
+  drawProgressBar(10, 92, 220, 14, d.grokTokens, cTokens);
+
+  _tft.drawFastHLine(0, 128, 240, TFT_DARKGREY);
+
+  uint16_t cReqs = progressColor(d.grokRequests);
+  _tft.setTextColor(colorLabel());
+  _tft.drawString("Requests", 10, 146, 2);
+  _tft.setFreeFont(VALUE_FONT);
+  _tft.setTextColor(cReqs);
+  snprintf(buf, sizeof(buf), "%d%%", d.grokRequests);
+  _tft.drawString(buf, 170, 138);
+  _tft.setTextFont(0);
+  drawProgressBar(10, 176, 220, 14, d.grokRequests, cReqs);
+
+  _tft.drawFastHLine(0, 272, 240, TFT_DARKGREY);
+  {
+    uint16_t f = _tft.color565(32,32,32), b = _tft.color565(90,90,90);
+    drawButton(6,   282, 112, 32, "< Claude", f, b, TFT_WHITE);
+    drawButton(122, 282, 112, 32, "Set >",    f, b, TFT_WHITE);
+  }
+
+  _prev.grokTokens   = d.grokTokens;
+  _prev.grokRequests = d.grokRequests;
+}
+
+void Renderer::updateGrokPortrait(const UsageData& d) {
+  char buf[8];
+  if (d.grokTokens != _prev.grokTokens) {
+    uint16_t c = progressColor(d.grokTokens);
+    _tft.fillRect(170, 54, 66, 28, TFT_BLACK);
+    _tft.setFreeFont(VALUE_FONT);
+    _tft.setTextColor(c);
+    snprintf(buf, sizeof(buf), "%d%%", d.grokTokens);
+    _tft.drawString(buf, 170, 54);
+    _tft.setTextFont(0);
+    drawProgressBar(10, 92, 220, 14, d.grokTokens, c);
+    _prev.grokTokens = d.grokTokens;
+  }
+  if (d.grokRequests != _prev.grokRequests) {
+    uint16_t c = progressColor(d.grokRequests);
+    _tft.fillRect(170, 138, 66, 28, TFT_BLACK);
+    _tft.setFreeFont(VALUE_FONT);
+    _tft.setTextColor(c);
+    snprintf(buf, sizeof(buf), "%d%%", d.grokRequests);
+    _tft.drawString(buf, 170, 138);
+    _tft.setTextFont(0);
+    drawProgressBar(10, 176, 220, 14, d.grokRequests, c);
     _prev.grokRequests = d.grokRequests;
   }
 }
