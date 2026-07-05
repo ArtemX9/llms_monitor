@@ -18,6 +18,7 @@ void Renderer::setRotation(uint8_t rotation) {
   _rotation = rotation & 0x03;
   _tft.setRotation(_rotation);
   applyTouchCalibration(_rotation);
+  _sprite.setHeaderWidth(portrait() ? 240 : 320);
 }
 
 // Derive the 5-word touch calibration for each rotation from the known-good

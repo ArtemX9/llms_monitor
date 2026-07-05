@@ -6,8 +6,6 @@ namespace {
   constexpr int   SPRITE_Y = 2;
   constexpr float START_X = -33.0f;
   constexpr float REST_X  = 5.0f;
-  // TODO: tune on hardware to clear the "Usage" title's left edge.
-  constexpr float TITLE_X = 80.0f;
 
   constexpr int SPRITE_W = 30; // 10 cols * 3px
   constexpr int SPRITE_H = 36; // 12 rows * 3px
@@ -68,6 +66,12 @@ void AnimatedSprite::tick(unsigned long nowMs) {
     _redrawNeeded = true;
   }
 
+  // Title text is centered at _headerWidth / 2; the sprite's patrol stops at
+  // _headerWidth / 4 (half the title's center-x) to clear its left edge. This
+  // preserves the original landscape relationship (320 / 4 == 80, the tuned
+  // literal this replaced) at any header width, including portrait (240 / 4 == 60).
+  const float titleX = _headerWidth / 4.0f;
+
   float newX = _x;
   switch (_phase) {
     case Phase::Idle:
@@ -94,16 +98,16 @@ void AnimatedSprite::tick(unsigned long nowMs) {
     case Phase::ToTitle: {
       float p = float(nowMs - _phaseStartMs) / LEG_DUR_MS;
       if (p >= 1.0f) {
-        newX = TITLE_X;
+        newX = titleX;
         _phase = Phase::AtTitle;
         _phaseStartMs = nowMs;
       } else {
-        newX = REST_X + (TITLE_X - REST_X) * easeInOutQuad(p);
+        newX = REST_X + (titleX - REST_X) * easeInOutQuad(p);
       }
       break;
     }
     case Phase::AtTitle:
-      newX = TITLE_X;
+      newX = titleX;
       if (nowMs - _phaseStartMs >= PAUSE_MS) {
         _phase = Phase::ToLeft;
         _phaseStartMs = nowMs;
@@ -116,7 +120,7 @@ void AnimatedSprite::tick(unsigned long nowMs) {
         _phase = Phase::AtLeft;
         _phaseStartMs = nowMs;
       } else {
-        newX = TITLE_X + (REST_X - TITLE_X) * easeInOutQuad(p);
+        newX = titleX + (REST_X - titleX) * easeInOutQuad(p);
       }
       break;
     }

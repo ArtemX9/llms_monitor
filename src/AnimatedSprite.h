@@ -8,6 +8,7 @@ public:
   void tick(unsigned long nowMs);
   bool needsRedraw() const { return _redrawNeeded; }
   void draw(TFT_eSPI& tft);
+  void setHeaderWidth(int w) { _headerWidth = w; }
 
 private:
   enum class Phase { Idle, Entering, AtLeft, ToTitle, AtTitle, ToLeft };
@@ -25,6 +26,7 @@ private:
   bool          _hasDrawn     = false; // false until the first draw() call
   int           _lastDrawX    = 5;    // previous draw()'s footprint, so draw()
   int           _lastDrawY    = 2;    // only erases exactly what needs erasing
+  int           _headerWidth  = 320; // landscape header width; set per geometry
 
   void reroll(unsigned long nowMs);
 };
