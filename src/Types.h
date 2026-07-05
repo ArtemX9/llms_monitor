@@ -17,6 +17,7 @@ struct AppState {
   unsigned long fetchInterval   = 60000;
   bool          needsFullRedraw = true;
   bool          ledEnabled      = true;
+  uint8_t       rotation        = 3;   // raw TFT_eSPI rotation 0..3 (3 = landscape default)
   unsigned long rebootArmedAt   = 0; // 0 = disarmed; set to millis() on first reboot-icon tap
 };
 

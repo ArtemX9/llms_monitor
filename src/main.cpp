@@ -5,6 +5,7 @@
 #include "Types.h"
 #include "DataFetcher.h"
 #include "Renderer.h"
+#include "NvsConfig.h"
 #include "TouchRouter.h"
 
 const WifiCredential wifiNetworks[] = {
@@ -77,7 +78,8 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.setSleep(false);
 
-  renderer.init(state.brightness);
+  state.rotation = NvsConfig::loadRotation(3);
+  renderer.init(state.rotation, state.brightness);
   renderer.showConnecting();
 
   if (fetcher.connect()) {

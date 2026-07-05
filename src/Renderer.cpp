@@ -5,18 +5,43 @@
 
 TFT_eSPI& Renderer::tft() { return _tft; }
 
-void Renderer::init(uint8_t brightness) {
+void Renderer::init(uint8_t rotation, uint8_t brightness) {
   _tft.init();
-  _tft.setRotation(3);
-  // Touch calibration for this specific XPT2046 panel (ESP32-32E CYD board),
-  // obtained via TFT_eSPI's calibrateTouch() — the factory default mapping
-  // does not match this unit's raw ADC range.
-  uint16_t calData[5] = {433, 3490, 314, 3448, 5};
-  _tft.setTouch(calData);
+  setRotation(rotation);
   _tft.fillScreen(TFT_BLACK);
   ledcSetup(BL_CHANNEL, BL_FREQ, BL_RES);
   ledcAttachPin(TFT_BL_PIN, BL_CHANNEL);
   ledcWrite(BL_CHANNEL, brightness);
+}
+
+void Renderer::setRotation(uint8_t rotation) {
+  _rotation = rotation & 0x03;
+  _tft.setRotation(_rotation);
+  applyTouchCalibration(_rotation);
+}
+
+// Derive the 5-word touch calibration for each rotation from the known-good
+// rotation-3 baseline {433, 3490, 314, 3448, 5}. The XPT2046 raw ADC bounds are
+// physically fixed; only axis roles (rotate bit) and invert bits change.
+//   flag bits: rotate | invert_x<<1 | invert_y<<2
+//   rotation 3 (given): rotate=1, invert_x=0, invert_y=1  -> 0b101 = 5
+// Landscape (1,3): rotate=1, calData uses {raw_y range, raw_x range}.
+// Portrait  (0,2): rotate=0, axis roles swap -> {raw_x range, raw_y range}.
+// The portrait invert bits (base rotation 0) are the uncertain part; if a
+// rotation reads mirrored on hardware, the long-press recalibrate gesture
+// (Task 7) overrides these permanently via NVS.
+void Renderer::applyTouchCalibration(uint8_t rotation) {
+  uint16_t cal[5];
+  if (!NvsConfig::loadCal(rotation, cal)) {
+    switch (rotation) {
+      case 3: cal[0]=433; cal[1]=3490; cal[2]=314; cal[3]=3448; cal[4]=0b101; break;
+      case 1: cal[0]=433; cal[1]=3490; cal[2]=314; cal[3]=3448; cal[4]=0b011; break;
+      case 0: cal[0]=314; cal[1]=3448; cal[2]=433; cal[3]=3490; cal[4]=0b000; break;
+      case 2: cal[0]=314; cal[1]=3448; cal[2]=433; cal[3]=3490; cal[4]=0b110; break;
+      default: cal[0]=433; cal[1]=3490; cal[2]=314; cal[3]=3448; cal[4]=0b101; break;
+    }
+  }
+  _tft.setTouch(cal);
 }
 
 static void formatReset(char* buf, size_t n, int minutes) {

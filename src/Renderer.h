@@ -2,11 +2,16 @@
 #include <TFT_eSPI.h>
 #include "Types.h"
 #include "AnimatedSprite.h"
+#include "NvsConfig.h"
 
 class Renderer {
   TFT_eSPI      _tft;
   UsageData     _prev = { -1, -1, -1, -1, -1 };
   AnimatedSprite _sprite;
+
+  uint8_t _rotation = 3;
+  bool portrait() const { return _rotation == 0 || _rotation == 2; }
+  void applyTouchCalibration(uint8_t rotation);
 
   uint16_t progressColor(int pct);
   void drawProgressBar(int x, int y, int w, int h, int pct, uint16_t color);
@@ -34,7 +39,8 @@ class Renderer {
 
 public:
   TFT_eSPI& tft();
-  void init(uint8_t brightness);
+  void init(uint8_t rotation, uint8_t brightness);
+  void setRotation(uint8_t rotation);
 
   void showConnecting();
   void showWifiFailed();
