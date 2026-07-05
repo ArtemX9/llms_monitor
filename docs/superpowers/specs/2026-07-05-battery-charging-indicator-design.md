@@ -152,13 +152,18 @@ bool Battery::isCharging() const { return _charging; }
 
 `drawBatteryIcon(int pct)` becomes `drawBatteryIcon(int pct, bool charging)`.
 When `charging` is true, a small 2-segment lightning-bolt glyph is drawn in
-`TFT_WHITE` on top of the existing body fill (after the existing
+`TFT_WHITE` inside the body's interior box (after the existing
 `drawProgressBar` + nub calls) — same convention as the reboot icon's armed
 state, which also draws a white glyph over a colored fill for contrast
 against either color. This keeps the level-color logic (green/red by
 `BAT_LOW_PCT`) completely untouched; charging is a layered overlay, not a
-color change, so a low, charging battery still reads as both "low" (red
-body) and "charging" (white bolt on top) simultaneously.
+color change, so a low, charging battery still reads as both "low" (red-ish
+body) and "charging" (white bolt) simultaneously. Note the bolt sits over
+whatever `drawProgressBar` already painted at that x-range — the colored
+fill only at higher percentages, the black unfilled remainder at lower
+ones (e.g. plugging in a nearly-dead pack) — white reads clearly against
+either, so this doesn't need special-casing, just don't read "on top of the
+fill" as implying the fill is always there under it.
 
 ```cpp
 void Renderer::drawBatteryIcon(int pct, bool charging) {
@@ -183,13 +188,21 @@ void Renderer::drawBatteryIcon(int pct, bool charging) {
   if (charging) {
     int bx = _tft.width() - 42; // body's left edge, matches drawProgressBar's x above
     _tft.drawLine(bx + 9, 5,  bx + 6, 8,  TFT_WHITE);
-    _tft.drawLine(bx + 6, 8,  bx + 10, 11, TFT_WHITE);
+    _tft.drawLine(bx + 6, 8,  bx + 10, 10, TFT_WHITE);
   }
 }
 ```
 
-Both line segments stay within the existing body footprint (`x: bx..bx+16`,
-`y: 4..12`) — no change to the icon's overall bounding box, so none of the
+`drawProgressBar`'s border occupies the body rect's outermost row on each
+edge (`_tft.drawRect(bx, 4, 16, 8, ...)` outlines rows `y=4` and `y=11`;
+the fill interior is `fillRect(bx+1, 5, ..., 6, ...)`, i.e. rows `y=5..10`).
+The bolt's points (`y=5,8,10`) are chosen to stay entirely within that
+`5..10` interior band, not touch the border rows — an earlier draft placed
+the bottom point at `y=11` (on the border) before this was caught in
+self-review.
+
+Both line segments stay within the existing body footprint (`x: bx+6..bx+10`,
+`y: 5..10`) — no change to the icon's overall bounding box, so none of the
 six screens' collision clearances (including the flagged, hardware-verified
 portrait-Settings risk from the level-indicator spec) are reopened.
 
@@ -272,3 +285,21 @@ No automated test harness exists for this embedded project. Verification is
   icons introduced — bolt stays within the existing icon footprint, so this
   should be a no-op check, but confirm on at least one screen since it's a
   new visual element.
+- `BAT_CHG_RISE_MV` (15mV) and the streak counts (3/2) are reasoned
+  estimates, not yet measured against this specific board's real ADC noise
+  floor — this project's level-indicator feature has its own hardware
+  verification pass still pending as of this writing, so there's no
+  existing on-device noise data to base these on. If the bolt flickers
+  on/off during a real charge session (a sign the threshold is too tight
+  for actual sample-to-sample jitter) or never triggers despite visibly
+  charging (too loose, or classification working but streak requirement
+  too strict for the chosen fetch interval), retune `BAT_CHG_RISE_MV`/
+  `BAT_CHG_RISE_STREAK`/`BAT_CHG_FALL_STREAK` in `Config.h` — no code
+  changes needed elsewhere, they're isolated constants.
+- A momentary bad reading (e.g. a loose battery connector glitching to a
+  near-zero raw value for one sample) followed by a normal reading would
+  produce a large spurious "rising" delta, contributing one count toward
+  the rising streak. This is the same class of accepted limitation as the
+  floating-pin note from the level-indicator feature's final review — not
+  a regression, just worth knowing if the bolt ever flickers on right after
+  a physical jostle of the connector rather than an actual USB plug-in.
