@@ -21,24 +21,25 @@ void Renderer::setRotation(uint8_t rotation) {
   _sprite.setHeaderWidth(portrait() ? 240 : 320);
 }
 
-// Derive the 5-word touch calibration for each rotation from the known-good
-// rotation-3 baseline {433, 3490, 314, 3448, 5}. The XPT2046 raw ADC bounds are
-// physically fixed; only axis roles (rotate bit) and invert bits change.
+// Per-rotation 5-word touch calibration for this XPT2046 panel.
 //   flag bits: rotate | invert_x<<1 | invert_y<<2
-//   rotation 3 (given): rotate=1, invert_x=0, invert_y=1  -> 0b101 = 5
-// Landscape (1,3): rotate=1, calData uses {raw_y range, raw_x range}.
-// Portrait  (0,2): rotate=0, axis roles swap -> {raw_x range, raw_y range}.
-// The portrait invert bits (base rotation 0) are the uncertain part; if a
-// rotation reads mirrored on hardware, the long-press recalibrate gesture
-// (Task 7) overrides these permanently via NVS.
+// - Rotation 3 (landscape): the original known-good baseline from calibrateTouch().
+// - Rotations 0 & 2 (portrait): measured on-device with calibrateTouch() — these are
+//   a proper 180° pair (rotate=0, both invert bits flipped between them). They replaced
+//   an earlier reasoned guess whose invert flags were swapped between the two rotations.
+// - Rotation 1 (landscape, 180° of 3): derived as rotation 3 with both invert bits
+//   flipped (0b101 -> 0b011) — the same 180° rule the measured 0/2 pair confirmed.
+//   Not yet measured on hardware; if it reads mirrored, the long-press recalibrate
+//   gesture overrides it permanently via NVS.
+// A stored NVS override (from recalibrate) always wins over these defaults.
 void Renderer::applyTouchCalibration(uint8_t rotation) {
   uint16_t cal[5];
   if (!NvsConfig::loadCal(rotation, cal)) {
     switch (rotation) {
       case 3: cal[0]=433; cal[1]=3490; cal[2]=314; cal[3]=3448; cal[4]=0b101; break;
       case 1: cal[0]=433; cal[1]=3490; cal[2]=314; cal[3]=3448; cal[4]=0b011; break;
-      case 0: cal[0]=314; cal[1]=3448; cal[2]=433; cal[3]=3490; cal[4]=0b000; break;
-      case 2: cal[0]=314; cal[1]=3448; cal[2]=433; cal[3]=3490; cal[4]=0b110; break;
+      case 0: cal[0]=310; cal[1]=3434; cal[2]=426; cal[3]=3415; cal[4]=0b110; break;
+      case 2: cal[0]=324; cal[1]=3371; cal[2]=451; cal[3]=3429; cal[4]=0b000; break;
       default: cal[0]=433; cal[1]=3490; cal[2]=314; cal[3]=3448; cal[4]=0b101; break;
     }
   }
