@@ -1,5 +1,14 @@
 #pragma once
 
+// Verbose serial logging for the loop-yield / CPU-frequency power tuning
+// (boot reset reason + CPU freq, loop iteration rate, touch event timing).
+// Off by default so normal runs stay quiet; enable with
+// `-DCM_DEBUG_POWER=1` in platformio.ini's build_flags when you need to
+// re-verify the power changes on hardware.
+#ifndef CM_DEBUG_POWER
+#define CM_DEBUG_POWER 0
+#endif
+
 #define TFT_BL_PIN 27
 #define BL_CHANNEL 0
 #define BL_FREQ    5000

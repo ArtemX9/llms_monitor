@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include "esp_log.h"
+#include "esp_system.h"
 #include "Config.h"
 #include "Types.h"
 #include "DataFetcher.h"
@@ -61,9 +62,41 @@ void rgbLed(LedSignal signal) {
   digitalWrite(LED_BLUE_PIN,  b ? LOW : HIGH);
 }
 
+#if CM_DEBUG_POWER
+// Diagnostic: names the boot cause, so a watchdog reset caused by the
+// loop() yield or CPU-frequency change would be visible in the serial log
+// instead of looking like a silent power-cycle.
+const char* resetReasonName(esp_reset_reason_t reason) {
+  switch (reason) {
+    case ESP_RST_POWERON:   return "POWERON";
+    case ESP_RST_EXT:       return "EXT";
+    case ESP_RST_SW:        return "SW";
+    case ESP_RST_PANIC:     return "PANIC";
+    case ESP_RST_INT_WDT:   return "INT_WDT";
+    case ESP_RST_TASK_WDT:  return "TASK_WDT";
+    case ESP_RST_WDT:       return "WDT";
+    case ESP_RST_DEEPSLEEP: return "DEEPSLEEP";
+    case ESP_RST_BROWNOUT:  return "BROWNOUT";
+    case ESP_RST_SDIO:      return "SDIO";
+    default:                return "UNKNOWN";
+  }
+}
+#endif // CM_DEBUG_POWER
+
 void setup() {
   Serial.begin(115200);
   esp_log_level_set("*", ESP_LOG_NONE);
+#if CM_DEBUG_POWER
+  Serial.printf("[boot] reset reason=%s\n", resetReasonName(esp_reset_reason()));
+#endif
+
+  // This app is I/O-bound (SPI, WiFi, timers), not compute-bound, so 240MHz
+  // is unused headroom that costs battery. WiFi requires >=80MHz; SPI/touch
+  // clocks come from the fixed 80MHz APB bus and are unaffected by this.
+  setCpuFrequencyMhz(80);
+#if CM_DEBUG_POWER
+  Serial.printf("[boot] cpu freq=%u MHz\n", getCpuFrequencyMhz());
+#endif
 
   pinMode(LED_RED_PIN,   OUTPUT);
   pinMode(LED_GREEN_PIN, OUTPUT);
@@ -110,11 +143,41 @@ void setup() {
   }
 }
 
+#if CM_DEBUG_POWER
+// Diagnostic: prints loop iterations/sec every 5s so the effect of the
+// delay(10) yield and CPU-frequency change can be seen directly, and to
+// confirm the loop never stalls.
+void logLoopRate() {
+  static unsigned long lastLogMs = 0;
+  static unsigned long iterations = 0;
+  iterations++;
+  unsigned long now = millis();
+  if (now - lastLogMs >= 5000) {
+    Serial.printf("[loop] %lu iterations / %lus (%.1f Hz)\n",
+                  iterations, (now - lastLogMs) / 1000, iterations * 1000.0f / (now - lastLogMs));
+    iterations = 0;
+    lastLogMs = now;
+  }
+}
+#endif // CM_DEBUG_POWER
+
 void loop() {
+#if CM_DEBUG_POWER
+  logLoopRate();
+#endif
   fetcher.tick();
   if (state.screen == 0) renderer.tickSprite();
 
-  switch (touch.poll(state.screen)) {
+  Event touchEvent = touch.poll(state.screen);
+#if CM_DEBUG_POWER
+  if (touchEvent != Event::None) {
+    // Diagnostic: confirms touch presses still register promptly with the
+    // delay(10) yield in place below.
+    Serial.printf("[touch] event=%d at t=%lu\n", (int)touchEvent, millis());
+  }
+#endif
+
+  switch (touchEvent) {
     case Event::NavForward:
       if (state.screen == 2) state.rebootArmedAt = 0;
       state.screen = (state.screen + 1) % 3;
@@ -203,4 +266,10 @@ void loop() {
     }
     lastFetch = millis();
   }
+
+  // Yield to the FreeRTOS idle task so the CPU can idle (WFI) between
+  // iterations instead of spinning at full clock forever — see battery
+  // review, 2026-07-05. 10ms keeps touch feeling instant (~100Hz polling)
+  // while giving the idle task a chance to run.
+  delay(10);
 }
