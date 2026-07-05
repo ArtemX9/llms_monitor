@@ -7,18 +7,27 @@ Event TouchRouter::poll(int screen) {
   bool touched = _tft.getTouch(&x, &y);
 
   // Rotate-icon press tracking (Settings only). Header icon zone x[82,114] y[6,38].
+  // A press that BEGINS on the icon is tracked until the finger truly lifts, so
+  // drifting off the 32px icon mid-press (common on resistive touch) neither
+  // fires a spurious cycle nor restarts the long-press timer.
   if (screen == 2) {
     bool inRotZone = touched && x >= 82 && x <= 114 && y >= 6 && y <= 38;
-    if (inRotZone) {
-      if (_rotPressStart == 0) { _rotPressStart = millis(); _rotLongFired = false; }
-      if (!_rotLongFired && millis() - _rotPressStart >= 800) {
-        _rotLongFired = true;
-        _lastTouch = millis();
-        return Event::Recalibrate;   // fires once while still held
+    if (touched) {
+      // Start tracking only when the press first lands on the icon.
+      if (_rotPressStart == 0 && inRotZone) { _rotPressStart = millis(); _rotLongFired = false; }
+      if (_rotPressStart != 0) {
+        // Press originated on the icon; hold the decision until true release,
+        // regardless of whether the finger has since drifted off the icon.
+        if (!_rotLongFired && millis() - _rotPressStart >= 800) {
+          _rotLongFired = true;
+          _lastTouch = millis();
+          return Event::Recalibrate;   // fires once while still held
+        }
+        return Event::None;            // swallow while deciding short vs long
       }
-      return Event::None;            // still deciding short vs long
+      // Touch began elsewhere: fall through to normal zone handling below.
     } else if (_rotPressStart != 0) {
-      // Released. Short tap if long-press never fired.
+      // Finger truly lifted. Short tap if the long-press never fired.
       unsigned long held = millis() - _rotPressStart;
       _rotPressStart = 0;
       bool wasLong = _rotLongFired;
