@@ -145,6 +145,48 @@ building `AnimatedSprite`). Either swap each color once when writing it into the
 `tft.setSwapBytes(true)` first — the former keeps `pushPixels()`'s faster raw burst-write
 path instead of falling back to a per-pixel loop.
 
+### `loop()` must yield — nothing in it does by default
+Before 2026-07-05, `loop()` had no `delay()`/`vTaskDelay()` anywhere in its steady-state
+path — it spun as fast as the CPU could go, polling touch (`_tft.getTouch()`, an SPI
+transaction) and checking `millis()` every iteration, forever. Since `loopTask` runs at a
+higher FreeRTOS priority than the IDLE task, an unyielding `loop()` means IDLE never gets
+scheduled, so the CPU never idles (WFI) between iterations — a meaningful, avoidable
+battery cost on a device that's mostly waiting on SPI/WiFi, not computing. It also risks
+starving the IDLE-task watchdog (arduino-esp32's default sdkconfig subscribes IDLE0/1 to
+the TWDT).
+
+Fix: `delay(10)` at the end of `loop()` (`src/main.cpp`). Caps touch polling at ~100Hz —
+imperceptible to a human finger — while letting IDLE run. Verified on hardware: stable
+loop cadence, no missed touch events, no watchdog resets (checked via boot reset-reason
+log), fetch/render timing unaffected. Any new long-running or blocking work added to
+`loop()` should still go through this same yield point rather than adding a second one.
+
+### CPU clocked at 80MHz, not the default 240MHz
+Set via `setCpuFrequencyMhz(80)` early in `setup()` (`src/main.cpp`), before WiFi/display
+init. This app is I/O-bound (SPI to the display/touch controller, WiFi/HTTP, timers), not
+compute-bound, so 240MHz is mostly unused headroom that costs battery for no benefit. Two
+things make this safe on this hardware: WiFi requires ≥80MHz CPU (so 80 is the floor, not
+a value that breaks the radio), and the SPI/touch clocks (`SPI_FREQUENCY`,
+`SPI_TOUCH_FREQUENCY` in `platformio.ini`) are derived from the fixed 80MHz APB bus, not
+the CPU PLL, so display/touch throughput is unaffected by this change. Confirmed on
+hardware: loop iteration rate barely changed after dropping to 80MHz (~45Hz before and
+after), meaning the ~12ms of non-yield work per iteration was already dominated by SPI
+wait states, not CPU-bound instruction execution — so this was close to a free win.
+
+If touch or rendering ever starts feeling laggy after future changes, 160MHz
+(`setCpuFrequencyMhz(160)`) is the next step up before reverting to 240 — don't assume 80
+is too slow without measuring first, and don't jump straight back to 240 as the fix.
+
+### Power-tuning diagnostics are gated behind `CM_DEBUG_POWER`, not deleted
+`Config.h` defines `CM_DEBUG_POWER` (default `0`). When set to `1` (add
+`-DCM_DEBUG_POWER=1` to `platformio.ini`'s `build_flags`), `main.cpp` logs: boot reset
+reason (catches `TASK_WDT`/`WDT`/`PANIC` resets the loop-yield or clock change could in
+theory cause), applied CPU frequency, loop iterations/sec every 5s, and every non-`None`
+touch event with a timestamp. These were how the loop-yield and 80MHz changes above were
+verified on real hardware. Re-enable this flag rather than re-adding ad hoc `Serial.printf`
+calls if either of those two changes is ever suspected of causing a regression, or before
+tuning them further (e.g. trying a longer `delay()` or a lower clock speed).
+
 ## Architecture
 
 Three concerns, strictly separated:
