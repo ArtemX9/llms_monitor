@@ -47,8 +47,9 @@ void Renderer::applyTouchCalibration(uint8_t rotation) {
 }
 
 static void formatReset(char* buf, size_t n, int minutes) {
-  if (minutes >= 60) snprintf(buf, n, "Resets in %dh %dm", minutes / 60, minutes % 60);
-  else               snprintf(buf, n, "Resets in %d min", minutes);
+  if (minutes >= 1440) snprintf(buf, n, "Resets in %dd %dh", minutes / 1440, (minutes % 1440) / 60);
+  else if (minutes >= 60) snprintf(buf, n, "Resets in %dh %dm", minutes / 60, minutes % 60);
+  else                snprintf(buf, n, "Resets in %d min", minutes);
 }
 
 // ── Primitives ────────────────────────────────────────────────────────────────
@@ -382,7 +383,7 @@ void Renderer::updateClaudePortrait(const UsageData& d) {
 
 void Renderer::drawGrok(const UsageData& d) {
   if (portrait()) { drawGrokPortrait(d); return; }
-  char buf[8];
+  char buf[24];
   _tft.fillScreen(TFT_BLACK);
   drawBatteryIcon(_batteryPct, _batteryCharging);
   _tft.setFreeFont(TITLE_FONT);
@@ -391,27 +392,17 @@ void Renderer::drawGrok(const UsageData& d) {
   _tft.setTextFont(0);
   _tft.drawFastHLine(0, 44, 320, TFT_DARKGREY);
 
-  uint16_t cTokens = progressColor(d.grokTokens);
-  _tft.setTextColor(colorLabel());
-  _tft.drawString("Tokens", 10, 58, 2);
+  uint16_t cUsage = progressColor(d.grokUsage);
+  snprintf(buf, sizeof(buf), "%d%%", d.grokUsage);
   _tft.setFreeFont(VALUE_FONT);
-  _tft.setTextColor(cTokens);
-  snprintf(buf, sizeof(buf), "%d%%", d.grokTokens);
-  _tft.drawString(buf, 240, 50);
+  _tft.setTextColor(cUsage);
+  _tft.drawString(buf, 10, 52);
   _tft.setTextFont(0);
-  drawProgressBar(10, 86, 300, 14, d.grokTokens, cTokens);
-
-  _tft.drawFastHLine(0, 112, 320, TFT_DARKGREY);
-
-  uint16_t cReqs = progressColor(d.grokRequests);
-  _tft.setTextColor(colorLabel());
-  _tft.drawString("Requests", 10, 126, 2);
-  _tft.setFreeFont(VALUE_FONT);
-  _tft.setTextColor(cReqs);
-  snprintf(buf, sizeof(buf), "%d%%", d.grokRequests);
-  _tft.drawString(buf, 240, 118);
-  _tft.setTextFont(0);
-  drawProgressBar(10, 154, 300, 14, d.grokRequests, cReqs);
+  drawPill(206, 52, 104, 28, "Usage");
+  drawProgressBar(10, 86, 300, 14, d.grokUsage, cUsage);
+  formatReset(buf, sizeof(buf), d.grokReset);
+  _tft.setTextColor(TFT_DARKGREY);
+  _tft.drawString(buf, 10, 104, 2);
 
   _tft.drawFastHLine(0, 180, 320, TFT_DARKGREY);
   {
@@ -420,39 +411,35 @@ void Renderer::drawGrok(const UsageData& d) {
     drawButton(170, 190, 142, 34, "Settings >", f, b, TFT_WHITE);
   }
 
-  _prev.grokTokens   = d.grokTokens;
-  _prev.grokRequests = d.grokRequests;
+  _prev.grokUsage = d.grokUsage;
+  _prev.grokReset = d.grokReset;
 }
 
 void Renderer::updateGrok(const UsageData& d) {
   if (portrait()) { updateGrokPortrait(d); return; }
-  char buf[8];
-  if (d.grokTokens != _prev.grokTokens) {
-    uint16_t c = progressColor(d.grokTokens);
-    _tft.fillRect(240, 50, 72, 28, TFT_BLACK);
+  char buf[24];
+  if (d.grokUsage != _prev.grokUsage) {
+    uint16_t c = progressColor(d.grokUsage);
+    _tft.fillRect(10, 52, 190, 28, TFT_BLACK);
     _tft.setFreeFont(VALUE_FONT);
     _tft.setTextColor(c);
-    snprintf(buf, sizeof(buf), "%d%%", d.grokTokens);
-    _tft.drawString(buf, 240, 50);
+    snprintf(buf, sizeof(buf), "%d%%", d.grokUsage);
+    _tft.drawString(buf, 10, 52);
     _tft.setTextFont(0);
-    drawProgressBar(10, 86, 300, 14, d.grokTokens, c);
-    _prev.grokTokens = d.grokTokens;
+    drawProgressBar(10, 86, 300, 14, d.grokUsage, c);
+    _prev.grokUsage = d.grokUsage;
   }
-  if (d.grokRequests != _prev.grokRequests) {
-    uint16_t c = progressColor(d.grokRequests);
-    _tft.fillRect(240, 118, 72, 28, TFT_BLACK);
-    _tft.setFreeFont(VALUE_FONT);
-    _tft.setTextColor(c);
-    snprintf(buf, sizeof(buf), "%d%%", d.grokRequests);
-    _tft.drawString(buf, 240, 118);
-    _tft.setTextFont(0);
-    drawProgressBar(10, 154, 300, 14, d.grokRequests, c);
-    _prev.grokRequests = d.grokRequests;
+  if (d.grokReset != _prev.grokReset) {
+    _tft.fillRect(10, 104, 260, 16, TFT_BLACK);
+    _tft.setTextColor(TFT_DARKGREY);
+    formatReset(buf, sizeof(buf), d.grokReset);
+    _tft.drawString(buf, 10, 104, 2);
+    _prev.grokReset = d.grokReset;
   }
 }
 
 void Renderer::drawGrokPortrait(const UsageData& d) {
-  char buf[8];
+  char buf[24];
   _tft.fillScreen(TFT_BLACK);
   drawBatteryIcon(_batteryPct, _batteryCharging);
   _tft.setFreeFont(TITLE_FONT);
@@ -461,27 +448,17 @@ void Renderer::drawGrokPortrait(const UsageData& d) {
   _tft.setTextFont(0);
   _tft.drawFastHLine(0, 44, 240, TFT_DARKGREY);
 
-  uint16_t cTokens = progressColor(d.grokTokens);
-  _tft.setTextColor(colorLabel());
-  _tft.drawString("Tokens", 10, 62, 2);
+  uint16_t cUsage = progressColor(d.grokUsage);
+  snprintf(buf, sizeof(buf), "%d%%", d.grokUsage);
   _tft.setFreeFont(VALUE_FONT);
-  _tft.setTextColor(cTokens);
-  snprintf(buf, sizeof(buf), "%d%%", d.grokTokens);
-  _tft.drawString(buf, 170, 54);
+  _tft.setTextColor(cUsage);
+  _tft.drawString(buf, 10, 56);
   _tft.setTextFont(0);
-  drawProgressBar(10, 92, 220, 14, d.grokTokens, cTokens);
-
-  _tft.drawFastHLine(0, 128, 240, TFT_DARKGREY);
-
-  uint16_t cReqs = progressColor(d.grokRequests);
-  _tft.setTextColor(colorLabel());
-  _tft.drawString("Requests", 10, 146, 2);
-  _tft.setFreeFont(VALUE_FONT);
-  _tft.setTextColor(cReqs);
-  snprintf(buf, sizeof(buf), "%d%%", d.grokRequests);
-  _tft.drawString(buf, 170, 138);
-  _tft.setTextFont(0);
-  drawProgressBar(10, 176, 220, 14, d.grokRequests, cReqs);
+  drawPill(136, 56, 94, 28, "Usage");
+  drawProgressBar(10, 92, 220, 14, d.grokUsage, cUsage);
+  formatReset(buf, sizeof(buf), d.grokReset);
+  _tft.setTextColor(TFT_DARKGREY);
+  _tft.drawString(buf, 10, 112, 2);
 
   _tft.drawFastHLine(0, 272, 240, TFT_DARKGREY);
   {
@@ -490,33 +467,29 @@ void Renderer::drawGrokPortrait(const UsageData& d) {
     drawButton(122, 282, 112, 32, "Set >",    f, b, TFT_WHITE);
   }
 
-  _prev.grokTokens   = d.grokTokens;
-  _prev.grokRequests = d.grokRequests;
+  _prev.grokUsage = d.grokUsage;
+  _prev.grokReset = d.grokReset;
 }
 
 void Renderer::updateGrokPortrait(const UsageData& d) {
-  char buf[8];
-  if (d.grokTokens != _prev.grokTokens) {
-    uint16_t c = progressColor(d.grokTokens);
-    _tft.fillRect(170, 54, 66, 28, TFT_BLACK);
+  char buf[24];
+  if (d.grokUsage != _prev.grokUsage) {
+    uint16_t c = progressColor(d.grokUsage);
+    _tft.fillRect(10, 56, 120, 28, TFT_BLACK);
     _tft.setFreeFont(VALUE_FONT);
     _tft.setTextColor(c);
-    snprintf(buf, sizeof(buf), "%d%%", d.grokTokens);
-    _tft.drawString(buf, 170, 54);
+    snprintf(buf, sizeof(buf), "%d%%", d.grokUsage);
+    _tft.drawString(buf, 10, 56);
     _tft.setTextFont(0);
-    drawProgressBar(10, 92, 220, 14, d.grokTokens, c);
-    _prev.grokTokens = d.grokTokens;
+    drawProgressBar(10, 92, 220, 14, d.grokUsage, c);
+    _prev.grokUsage = d.grokUsage;
   }
-  if (d.grokRequests != _prev.grokRequests) {
-    uint16_t c = progressColor(d.grokRequests);
-    _tft.fillRect(170, 138, 66, 28, TFT_BLACK);
-    _tft.setFreeFont(VALUE_FONT);
-    _tft.setTextColor(c);
-    snprintf(buf, sizeof(buf), "%d%%", d.grokRequests);
-    _tft.drawString(buf, 170, 138);
-    _tft.setTextFont(0);
-    drawProgressBar(10, 176, 220, 14, d.grokRequests, c);
-    _prev.grokRequests = d.grokRequests;
+  if (d.grokReset != _prev.grokReset) {
+    _tft.fillRect(10, 112, 220, 16, TFT_BLACK);
+    _tft.setTextColor(TFT_DARKGREY);
+    formatReset(buf, sizeof(buf), d.grokReset);
+    _tft.drawString(buf, 10, 112, 2);
+    _prev.grokReset = d.grokReset;
   }
 }
 

@@ -199,10 +199,10 @@ bool DataFetcher::fetch(UsageData& out) {
       out.claudeSession = doc["claude"]["session_pct"];
       out.claudeWeekly  = doc["claude"]["weekly_pct"];
       out.claudeReset   = doc["claude"]["reset_min"];
-      out.grokTokens    = doc["grok"]["token_pct"];
-      out.grokRequests  = doc["grok"]["request_pct"];
+      out.grokUsage     = doc["grok"]["usage_pct"];
+      out.grokReset     = doc["grok"]["reset_min"];
       Serial.printf("Claude: %d%% / %d%%  Grok: %d%%\n",
-                    out.claudeSession, out.claudeWeekly, out.grokTokens);
+                    out.claudeSession, out.claudeWeekly, out.grokUsage);
       ok = true;
     }
   } else {

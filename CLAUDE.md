@@ -235,6 +235,8 @@ Expected JSON shape:
 ```json
 {
   "claude": { "session_pct": 43, "weekly_pct": 9, "reset_min": 240 },
-  "grok":   { "token_pct": 0, "request_pct": 12 }
+  "grok":   { "usage_pct": 12, "reset_min": 44640 }
 }
 ```
+
+`grok.reset_min` is minutes until the *monthly billing period* resets (not a short rate-limit window like Claude's), so it can be in the tens of thousands — `Renderer`'s `formatReset()` handles day-scale durations (`Resets in Xd Yh`) for this reason. On flat-rate Grok plans (e.g. X Premium), the upstream billing endpoint only meters on-demand/pay-as-you-go usage, so `usage_pct` reads `0` regardless of actual usage — expected, not a bug.

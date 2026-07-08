@@ -5,7 +5,7 @@ An ESP32-based desk display that shows real-time Claude Code and Grok API usage 
 ## What it does
 
 - **Claude screen** — session usage %, weekly usage %, and minutes until reset
-- **Grok screen** — token usage % and request usage %
+- **Grok screen** — usage % and time until the billing period resets
 - **Settings screen** — backlight brightness, refresh interval (30 / 60 / 120 s), reboot button
 - Swipe left/right anywhere on the screen to navigate between the three screens
 - Fetches data from a local proxy server over WiFi; auto-reconnects and restarts after 5 consecutive failures
@@ -55,9 +55,11 @@ The device fetches from a local proxy server (default `http://192.168.2.131:3000
 ```json
 {
   "claude": { "session_pct": 43, "weekly_pct": 9, "reset_min": 240 },
-  "grok":   { "token_pct": 0, "request_pct": 12 }
+  "grok":   { "usage_pct": 12, "reset_min": 44640 }
 }
 ```
+
+Note: on flat-rate Grok plans (e.g. X Premium), `usage_pct` reads `0` regardless of actual usage — the upstream billing endpoint only meters pay-as-you-go/on-demand usage, not flat-rate quota.
 
 WiFi credentials and proxy URL are set at the top of `src/main.cpp`.
 

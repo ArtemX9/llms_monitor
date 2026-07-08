@@ -8,7 +8,7 @@ struct WifiCredential {
 
 struct UsageData {
   int claudeSession, claudeWeekly, claudeReset;
-  int grokTokens, grokRequests;
+  int grokUsage, grokReset;
 };
 
 struct AppState {
