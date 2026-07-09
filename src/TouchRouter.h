@@ -5,6 +5,9 @@
 class TouchRouter {
   TFT_eSPI&     _tft;
   unsigned long _lastTouch = 0;
+  unsigned long _rotPressStart = 0;  // when a press in the rotate-icon zone began (0 = none)
+  bool          _rotLongFired  = false; // long-press already emitted for this press
+  bool          _wasTouched    = false; // previous poll's touch state, for touch-down edge detection
 
 public:
   TouchRouter(TFT_eSPI& tft);
