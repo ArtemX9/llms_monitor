@@ -63,6 +63,18 @@ Note: on flat-rate Grok plans (e.g. X Premium), `usage_pct` reads `0` regardless
 
 WiFi credentials and proxy URL are set at the top of `src/main.cpp`.
 
+## Case (CAD)
+
+```
+cad/
+  case.scad         — OpenSCAD source for the 3D-printed enclosure
+  stl/
+    case_body.stl    — exported body, ready to slice
+    case_lid.stl      — exported lid, ready to slice
+```
+
+Edit `case.scad` in [OpenSCAD](https://openscad.org/) and re-export the STLs after any change.
+
 ## Project structure
 
 ```
