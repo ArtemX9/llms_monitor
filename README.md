@@ -48,6 +48,8 @@ pio run -t upload
 pio device monitor       # 115200 baud
 ```
 
+Prebuilt firmware binaries (for flashing with `esptool` instead of building from source) are published on the [Releases page](../../releases) for each tagged version.
+
 ## Data source
 
 The device fetches from a local proxy server (default `http://192.168.2.131:3000`). The proxy should return:

@@ -1,0 +1,58 @@
+name: Release firmware
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.ini') }}
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      - name: Build firmware
+        run: pio run -e esp32dev
+
+      - name: Rename artifacts
+        run: |
+          mkdir -p release
+          cp .pio/build/esp32dev/firmware.bin release/claude-monitor-firmware.bin
+          cp .pio/build/esp32dev/bootloader.bin release/claude-monitor-bootloader.bin
+          cp .pio/build/esp32dev/partitions.bin release/claude-monitor-partitions.bin
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          body: |
+            Prebuilt firmware for the ESP32 TFT usage display.
+
+            ## Flashing
+
+            Using [esptool](https://github.com/espressif/esptool):
+
+            ```
+            esptool.py --chip esp32 --port <PORT> --baud 460800 write_flash \
+              0x1000  claude-monitor-bootloader.bin \
+              0x8000  claude-monitor-partitions.bin \
+              0x10000 claude-monitor-firmware.bin
+            ```
+
+            Or open this repo in [PlatformIO](https://platformio.org/) and run `pio run -t upload`.
