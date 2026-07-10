@@ -2,6 +2,8 @@
 
 An ESP32-based desk display that shows real-time Claude Code and Grok API usage stats on a 320×240 ILI9341 TFT screen.
 
+![Device showing Claude Code session and weekly usage](docs/screenshot.jpeg)
+
 ## What it does
 
 - **Claude screen** — session usage %, weekly usage %, and minutes until reset
